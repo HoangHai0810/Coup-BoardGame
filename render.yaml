@@ -6,7 +6,7 @@ services:
     dockerContext: backend
     dockerfilePath: Dockerfile
     plan: free
-    region: singapore # Close to Vietnam
+    region: singapore
     envVars:
       - key: PORT
         value: 8080
@@ -21,36 +21,22 @@ services:
       - key: SPRING_JPA_DDL_AUTO
         value: update
       - key: CORS_ALLOWED_ORIGINS
-        fromService:
-          type: static
-          name: boardgame-frontend
-          property: url
+        value: https://boardgame-frontend.onrender.com
       - key: JWT_SECRET
         generateValue: true
 
-  # --- Frontend Static Site (React) ---
-  - type: web
+  - type: static
     name: boardgame-frontend
-    runtime: static
+    env: static
     plan: free
-    region: singapore
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: boardgame-backend
-          property: url
-          suffix: /api
+        value: https://boardgame-backend.onrender.com/api
       - key: VITE_WS_URL
-        fromService:
-          type: web
-          name: boardgame-backend
-          property: url
-          suffix: /ws
-
-# --- Database (PostgreSQL) ---
+        value: https://boardgame-backend.onrender.com/ws
+        
 databases:
   - name: boardgame-db
     plan: free

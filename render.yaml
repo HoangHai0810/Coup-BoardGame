@@ -12,9 +12,17 @@ services:
       - key: SPRING_DATASOURCE_URL
         fromDatabase:
           name: boardgame-db
-          property: connectionString
+          property: jdbcConnectionString
       - key: SPRING_DATASOURCE_DRIVER
         value: org.postgresql.Driver
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: boardgame-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: boardgame-db
+          property: password
       - key: SPRING_JPA_DIALECT
         value: org.hibernate.dialect.PostgreSQLDialect
       - key: SPRING_JPA_DDL_AUTO

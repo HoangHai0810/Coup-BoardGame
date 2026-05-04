@@ -25,7 +25,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
 
-  - type: static
+  - type: static_site
     name: boardgame-frontend
     env: static
     plan: free
@@ -36,7 +36,7 @@ services:
         value: https://boardgame-backend.onrender.com/api
       - key: VITE_WS_URL
         value: https://boardgame-backend.onrender.com/ws
-        
+
 databases:
   - name: boardgame-db
     plan: free

@@ -7,7 +7,7 @@ RUN npm run build
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-# Update nginx configuration to handle React Router and proxy API
+
 RUN echo 'server { \
     listen 5173; \
     location / { \

@@ -23,6 +23,7 @@ public class RoomController {
 
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
+    private final com.boardgame.service.CoupGameService coupGameService;
 
     public record CreateRoomRequest(
             @NotBlank String name,
@@ -82,6 +83,27 @@ public class RoomController {
         return roomRepository.findById(roomId)
                 .map(r -> ResponseEntity.ok(toDto(r)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{roomId}/leave")
+    public ResponseEntity<?> leaveRoom(@AuthenticationPrincipal UserEntity me,
+                                        @PathVariable String roomId) {
+        RoomEntity room = roomRepository.findById(roomId).orElse(null);
+        if (room == null) return ResponseEntity.ok().build();
+
+        String uid = me.getId().toString();
+        room.getPlayerIds().remove(uid);
+
+        if (room.getPlayerIds().isEmpty()) {
+            roomRepository.delete(room);
+            coupGameService.removeGame(roomId);
+        } else {
+            if (room.getHostId().equals(uid)) {
+                room.setHostId(room.getPlayerIds().get(0));
+            }
+            roomRepository.save(room);
+        }
+        return ResponseEntity.ok().build();
     }
 
     private Map<String, Object> toDto(RoomEntity room) {

@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [form, setForm] = useState({ usernameOrEmail: '', password: '' });
   const [loading, setLoading] = useState(false);
 
@@ -15,10 +18,10 @@ export default function Login() {
     setLoading(true);
     try {
       await login(form.usernameOrEmail, form.password);
-      toast.success('Chào mừng trở lại!');
+      toast.success(t('auth.loginTitle'));
       navigate('/lobby');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Đăng nhập thất bại');
+      toast.error(err.response?.data?.error || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -33,24 +36,24 @@ export default function Login() {
       }}>
         <div style={{ width: '100%', maxWidth: 420 }}>
           {/* Title */}
-          <div style={{ textAlign: 'center', marginBottom: 36 }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🎭</div>
-            <h1 className="display-font" style={{ fontSize: '1.8rem', marginBottom: 8 }}>
-              Đăng nhập
+          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} style={{ textAlign: 'center', marginBottom: 36 }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>🎭</div>
+            <h1 className="display-font" style={{ fontSize: '2.2rem', marginBottom: 8, color: 'var(--text-primary)' }}>
+              {t('nav.login')}
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Chào mừng trở lại, chiến binh!
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 700 }}>
+              {t('auth.loginTitle')}
             </p>
-          </div>
+          </motion.div>
 
           {/* Form */}
-          <div className="glass" style={{ padding: 32, borderRadius: 'var(--radius-xl)' }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }} className="card" style={{ padding: 40, borderRadius: 'var(--radius-xl)' }}>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Tên đăng nhập hoặc Email</label>
+                <label>{t('auth.username')} / Email</label>
                 <input className="input"
                   type="text"
-                  placeholder="username hoặc email@example.com"
+                  placeholder="username / email@example.com"
                   value={form.usernameOrEmail}
                   onChange={e => setForm(f => ({ ...f, usernameOrEmail: e.target.value }))}
                   required
@@ -58,7 +61,7 @@ export default function Login() {
               </div>
 
               <div className="form-group">
-                <label>Mật khẩu</label>
+                <label>{t('auth.password')}</label>
                 <input className="input"
                   type="password"
                   placeholder="••••••••"
@@ -69,17 +72,17 @@ export default function Login() {
               </div>
 
               <button type="submit" className="btn btn-primary"
-                style={{ width: '100%', padding: '13px', fontSize: '1rem', marginTop: 8 }}
+                style={{ width: '100%', padding: '16px', fontSize: '1.1rem', marginTop: 12 }}
                 disabled={loading}>
-                {loading ? 'Đang đăng nhập...' : 'Đăng nhập →'}
+                {loading ? '...' : `${t('auth.loginBtn')} →`}
               </button>
             </form>
-          </div>
+          </motion.div>
 
-          <p style={{ textAlign: 'center', marginTop: 20, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Chưa có tài khoản?{' '}
-            <Link to="/register" style={{ color: 'var(--accent-gold)', fontWeight: 600, textDecoration: 'none' }}>
-              Đăng ký ngay
+          <p style={{ textAlign: 'center', marginTop: 24, color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600 }}>
+            {t('auth.noAccount')}{' '}
+            <Link to="/register" style={{ color: 'var(--accent-primary)', fontWeight: 800, textDecoration: 'none' }}>
+              {t('nav.register')}
             </Link>
           </p>
         </div>

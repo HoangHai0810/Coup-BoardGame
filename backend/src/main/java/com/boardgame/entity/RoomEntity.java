@@ -17,7 +17,7 @@ import java.util.List;
 public class RoomEntity {
 
     @Id
-    private String id; // 6-char code e.g. "XKQM2A"
+    private String id;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -35,14 +35,14 @@ public class RoomEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private int aiCount = 0; // number of AI bots to fill
+    private int aiCount = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private RoomStatus status = RoomStatus.WAITING;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "room_players", joinColumns = @JoinColumn(name = "room_id"))
     @Column(name = "player_id")
     @Builder.Default

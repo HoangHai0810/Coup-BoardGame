@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "login": "Log in",
+    "register": "Register",
+    "logout": "Log out"
+  },
+  "home": {
+    "title": "Welcome to BoardRealm",
+    "subtitle": "Play your favorite board games online with friends!",
+    "games": "Available Games",
+    "playNow": "Play Now",
+    "rules": "Game Rules",
+    "characters": "Characters",
+    "heroDesc": "Jump right into the action. Bluff, steal, and assassinate your way to victory in Coup!"
+  },
+  "auth": {
+    "loginTitle": "Welcome Back!",
+    "registerTitle": "Join the Fun!",
+    "username": "Username",
+    "password": "Password",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginBtn": "Let's Play",
+    "registerBtn": "Sign Up"
+  },
+  "lobby": {
+    "title": "Game Lobby",
+    "welcome": "Hello, {{name}}!",
+    "createRoom": "Create Room",
+    "joinRoom": "Join Room",
+    "joinCode": "Enter 6-digit code",
+    "quickPlay": "⚡ Quick Play (vs AI)",
+    "publicRooms": "Public Rooms",
+    "roomPlayers": "Players",
+    "joinBtn": "Join",
+    "host": "Host",
+    "roomConfig": "Room Configuration",
+    "maxPlayers": "Max Players",
+    "aiBots": "Add AI Bots",
+    "cancel": "Cancel",
+    "createBtn": "Create"
+  },
+  "room": {
+    "title": "Waiting Room: {{code}}",
+    "waiting": "Waiting for host to start...",
+    "players": "Players in room",
+    "start": "Start Game",
+    "leave": "Leave Room"
+  },
+  "game": {
+    "actionPanel": "Your Turn! Choose an action",
+    "responsePanel": "Someone made a move!",
+    "coins": "Coins",
+    "cards": "Cards",
+    "deck": "Deck",
+    "actionLog": "Action History",
+    "you": "YOU",
+    "blockTitle": "Block this action?",
+    "challengeTitle": "Challenge this action?",
+    "allowBtn": "Allow (Pass)",
+    "challengeBtn": "Challenge! 😡",
+    "blockBtn": "Block with {{card}} 🛡️",
+    "loseCard": "You must lose a card!",
+    "chooseCard": "Choose a card to discard",
+    "exchangeTitle": "Exchange Cards",
+    "exchangeDesc": "Choose {{count}} cards to keep",
+    "confirm": "Confirm",
+    "winner": "🎉 Winner!",
+    "gameOver": "Game Over",
+    "returnLobby": "Return to Lobby",
+    "eliminated": "Eliminated 💀",
+    "actions": {
+      "income": "Income (+1 coin)",
+      "foreign_aid": "Foreign Aid (+2 coins)",
+      "tax": "Tax (+3 coins)",
+      "assassinate": "Assassinate (-3 coins)",
+      "steal": "Steal (+2 coins)",
+      "exchange": "Exchange cards",
+      "coup": "Coup (-7 coins)"
+    }
+  }
+}

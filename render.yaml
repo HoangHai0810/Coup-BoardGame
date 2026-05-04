@@ -1,0 +1,57 @@
+services:
+  # --- Backend Web Service (Spring Boot) ---
+  - type: web
+    name: boardgame-backend
+    env: docker
+    dockerContext: backend
+    dockerfilePath: Dockerfile
+    plan: free
+    region: singapore # Close to Vietnam
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: boardgame-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_DRIVER
+        value: org.postgresql.Driver
+      - key: SPRING_JPA_DIALECT
+        value: org.hibernate.dialect.PostgreSQLDialect
+      - key: SPRING_JPA_DDL_AUTO
+        value: update
+      - key: CORS_ALLOWED_ORIGINS
+        fromService:
+          type: static
+          name: boardgame-frontend
+          property: url
+      - key: JWT_SECRET
+        generateValue: true
+
+  # --- Frontend Static Site (React) ---
+  - type: static
+    name: boardgame-frontend
+    env: static
+    plan: free
+    region: singapore
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: boardgame-backend
+          property: url
+          suffix: /api
+      - key: VITE_WS_URL
+        fromService:
+          type: web
+          name: boardgame-backend
+          property: url
+          suffix: /ws
+
+# --- Database (PostgreSQL) ---
+databases:
+  - name: boardgame-db
+    plan: free
+    region: singapore

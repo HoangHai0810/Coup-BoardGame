@@ -65,7 +65,7 @@ public class GameWebSocketController {
             String aiId = "AI_" + (i + 1);
             String aiName = aiNames[i % aiNames.length];
             String aiAvatar = "https://api.dicebear.com/7.x/bottts/svg?seed=" + aiName;
-            players.add(new Player(aiId, aiName + " (AI)", aiAvatar, true));
+            players.add(new Player(aiId, aiName, aiAvatar, true));
         }
 
         GameState state = coupGameService.startGame(roomId, players);
@@ -73,8 +73,6 @@ public class GameWebSocketController {
         roomRepository.save(room);
 
         broadcastState(roomId, state);
-
-        // If first player is AI, schedule AI turn
         scheduleAITurnIfNeeded(roomId, state);
     }
 
@@ -91,6 +89,7 @@ public class GameWebSocketController {
             GameState state = coupGameService.declareAction(roomId, user.getId().toString(), actionType, msg.targetId());
             broadcastState(roomId, state);
             scheduleAIResponseIfNeeded(roomId, state);
+            scheduleAITurnIfNeeded(roomId, state);
         } catch (Exception e) {
             sendError(roomId, user.getId().toString(), e.getMessage());
         }
@@ -102,6 +101,7 @@ public class GameWebSocketController {
         GameState state = coupGameService.allowAction(roomId, user.getId().toString());
         broadcastState(roomId, state);
         scheduleAIResponseIfNeeded(roomId, state);
+        scheduleAITurnIfNeeded(roomId, state);
     }
 
     @MessageMapping("/game/{roomId}/challenge")
@@ -110,6 +110,7 @@ public class GameWebSocketController {
         GameState state = coupGameService.challenge(roomId, user.getId().toString());
         broadcastState(roomId, state);
         scheduleAIResponseIfNeeded(roomId, state);
+        scheduleAITurnIfNeeded(roomId, state);
     }
 
     @MessageMapping("/game/{roomId}/block")
@@ -121,6 +122,7 @@ public class GameWebSocketController {
             GameState state = coupGameService.block(roomId, user.getId().toString(), card);
             broadcastState(roomId, state);
             scheduleAIResponseIfNeeded(roomId, state);
+            scheduleAITurnIfNeeded(roomId, state);
         } catch (Exception e) {
             sendError(roomId, user.getId().toString(), e.getMessage());
         }

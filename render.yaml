@@ -1,10 +1,9 @@
 services:
-  # --- Backend Web Service (Spring Boot) ---
   - type: web
     name: boardgame-backend
-    env: docker
-    dockerContext: backend
-    dockerfilePath: Dockerfile
+    runtime: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
     plan: free
     region: singapore
     envVars:
@@ -25,17 +24,23 @@ services:
       - key: JWT_SECRET
         generateValue: true
 
-  - type: static_site
+  - type: web
     name: boardgame-frontend
-    env: static
+    runtime: static
     plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
+    region: singapore
+    rootDir: ./frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
     envVars:
       - key: VITE_API_BASE_URL
         value: https://boardgame-backend.onrender.com/api
       - key: VITE_WS_URL
         value: https://boardgame-backend.onrender.com/ws
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
 databases:
   - name: boardgame-db

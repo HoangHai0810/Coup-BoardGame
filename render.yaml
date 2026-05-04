@@ -29,9 +29,9 @@ services:
         generateValue: true
 
   # --- Frontend Static Site (React) ---
-  - type: static
+  - type: web
     name: boardgame-frontend
-    env: static
+    runtime: static
     plan: free
     region: singapore
     buildCommand: cd frontend && npm install && npm run build

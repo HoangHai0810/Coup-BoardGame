@@ -1,0 +1,4 @@
+.env
+target/
+backend/target/
+.DS_Store

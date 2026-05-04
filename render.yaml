@@ -28,7 +28,7 @@ services:
       - key: SPRING_JPA_DDL_AUTO
         value: update
       - key: CORS_ALLOWED_ORIGINS
-        value: https://boardgame-frontend.onrender.com
+        value: https://boardgame-frontend-k2so.onrender.com
       - key: JWT_SECRET
         generateValue: true
 
@@ -40,9 +40,9 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://boardgame-backend.onrender.com/api
+        value: https://boardgame-backend-tcuh.onrender.com/api
       - key: VITE_WS_URL
-        value: https://boardgame-backend.onrender.com/ws
+        value: https://boardgame-backend-tcuh.onrender.com/ws
     routes:
       - type: rewrite
         source: /*

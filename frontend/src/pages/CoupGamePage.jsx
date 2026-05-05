@@ -438,6 +438,18 @@ function ResponsePanel({ pendingAction, players, userId, phase, onChallenge, onB
   };
   const canBlock = !isBlockPhase && isTarget && blockCards[pendingAction.actionType];
 
+  const [timeLeft, setTimeLeft] = useState(3);
+  const isAutoPassing = !isBlockPhase && pendingAction.actorId !== userId && pendingAction.targetId !== userId;
+
+  useEffect(() => {
+    if (!isAutoPassing) return;
+    setTimeLeft(3);
+    const interval = setInterval(() => {
+      setTimeLeft(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isAutoPassing, pendingAction]);
+
   return (
     <div className={`response-panel ${isBlockPhase ? 'block-challenge' : ''}`}>
       <p style={{ fontWeight: 800, marginBottom: 20, fontSize: '1.1rem', color: isBlockPhase ? '#1976d2' : '#e65100' }}>
@@ -445,6 +457,12 @@ function ResponsePanel({ pendingAction, players, userId, phase, onChallenge, onB
           ? `🛡 ${players?.find(p => p.id === pendingAction.blockerId)?.username} chặn — thách thức không?`
           : `🎭 ${actor?.username} ${actionDescription(pendingAction, { players }, t)}`}
       </p>
+
+      {isAutoPassing && (
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+          ⏳ Tự động bỏ qua sau {timeLeft}s...
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         {!isBlockPhase && isChallengeableAction(pendingAction.actionType) && (

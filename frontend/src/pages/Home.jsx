@@ -34,7 +34,7 @@ export default function Home() {
       gradient: 'linear-gradient(135deg, #2d1a0a 0%, #7a4020 100%)',
       accentColor: '#f5a642',
       icon: '💥',
-      available: false
+      available: true
     },
     {
       id: 'uno',
@@ -46,7 +46,7 @@ export default function Home() {
       gradient: 'linear-gradient(135deg, #0a2d1a 0%, #1a6e3d 100%)',
       accentColor: '#3ec97d',
       icon: '🎴',
-      available: false
+      available: true
     },
     {
       id: 'monopoly',

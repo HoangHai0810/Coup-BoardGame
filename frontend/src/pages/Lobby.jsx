@@ -275,7 +275,7 @@ export default function Lobby() {
                     <select className="input"
                       value={createForm.maxPlayers}
                       onChange={e => setCreateForm(f => ({ ...f, maxPlayers: e.target.value }))}>
-                      {[2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
+                      {[2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
 
                   <div className="form-group">

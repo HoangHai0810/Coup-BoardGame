@@ -196,6 +196,7 @@ public class CoupGameService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid card choice"));
 
         card.setRevealed(true);
+        player.checkEliminated();
         state.addLog("game.logs.card_lost", Map.of("player", player.getUsername(), "card", cardType.name()));
 
         checkWinner(state);

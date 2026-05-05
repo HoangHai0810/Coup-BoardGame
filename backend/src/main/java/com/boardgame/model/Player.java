@@ -61,7 +61,7 @@ public class Player {
         checkEliminated();
     }
 
-    private void checkEliminated() {
+    public void checkEliminated() {
         if (getAliveCardCount() == 0) {
             this.eliminated = true;
         }

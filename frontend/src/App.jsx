@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import Lobby from './pages/Lobby';
 import RoomPage from './pages/RoomPage';
 import CoupGamePage from './pages/CoupGamePage';
+import ExplodingKittensPage from './pages/ExplodingKittensPage';
+import UnoPage from './pages/UnoPage';
 import './index.css';
 
 function ProtectedRoute({ children }) {
@@ -29,6 +31,12 @@ function AppRoutes() {
       } />
       <Route path="/game/coup/:roomId" element={
         <ProtectedRoute><CoupGamePage /></ProtectedRoute>
+      } />
+      <Route path="/game/kittens/:roomId" element={
+        <ProtectedRoute><ExplodingKittensPage /></ProtectedRoute>
+      } />
+      <Route path="/game/uno/:roomId" element={
+        <ProtectedRoute><UnoPage /></ProtectedRoute>
       } />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

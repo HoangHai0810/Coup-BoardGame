@@ -29,7 +29,8 @@ export default function RoomPage() {
         setRoom(res.data);
         // If game started, redirect
         if (res.data.status === 'IN_GAME') {
-          navigate(`/game/coup/${roomId}`);
+          const gamePath = res.data.gameType.toLowerCase();
+          navigate(`/game/${gamePath}/${roomId}`);
         }
       }).catch(() => {});
     }, 2000);
@@ -80,7 +81,9 @@ export default function RoomPage() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
           <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
-            <div className="badge badge-gold" style={{ marginBottom: 10 }}>🃏 Coup</div>
+            <div className="badge badge-gold" style={{ marginBottom: 10 }}>
+              {room?.gameType === 'KITTENS' ? '🙀 Mèo nổ' : room?.gameType === 'UNO' ? '🌈 Uno' : '🃏 Coup'}
+            </div>
             <h1 style={{ fontSize: '2rem', marginBottom: 6, color: 'var(--text-primary)' }}>{room?.name}</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 700 }}>
               {t('room.title', { code: roomId })}

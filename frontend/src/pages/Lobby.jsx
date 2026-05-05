@@ -14,7 +14,7 @@ export default function Lobby() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', maxPlayers: 4, aiCount: 0 });
+  const [createForm, setCreateForm] = useState({ name: '', maxPlayers: 4, aiCount: 0, gameType: 'COUP' });
   const [creating, setCreating] = useState(false);
   const [joinCode, setJoinCode] = useState('');
 
@@ -39,7 +39,8 @@ export default function Lobby() {
       const res = await api.post('/rooms', {
         name: createForm.name || `${user.username}'s Room`,
         maxPlayers: parseInt(createForm.maxPlayers),
-        aiCount: parseInt(createForm.aiCount)
+        aiCount: parseInt(createForm.aiCount),
+        gameType: createForm.gameType
       });
       toast.success(t('lobby.roomCreated') || 'Phòng đã được tạo!');
       navigate(`/room/${res.data.id}`);
@@ -242,15 +243,40 @@ export default function Lobby() {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div className="form-group">
-                    <label>{t('lobby.maxPlayers')}</label>
+                <div className="form-group">
+                  <label>{t('lobby.gameSelection') || 'Chọn Trò Chơi'}</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 8 }}>
+                    <div 
+                      onClick={() => setCreateForm({ ...createForm, gameType: 'COUP' })}
+                      className={`game-card-select ${createForm.gameType === 'COUP' ? 'active' : ''}`}
+                    >
+                      <span style={{ fontSize: '1.5rem' }}>🃏</span>
+                      <span>Coup</span>
+                    </div>
+                    <div 
+                      onClick={() => setCreateForm({ ...createForm, gameType: 'KITTENS', maxPlayers: 5 })}
+                      className={`game-card-select ${createForm.gameType === 'KITTENS' ? 'active' : ''}`}
+                    >
+                      <span style={{ fontSize: '1.5rem' }}>🙀</span>
+                      <span>Mèo nổ</span>
+                    </div>
+                    <div 
+                      onClick={() => setCreateForm({ ...createForm, gameType: 'UNO', maxPlayers: 10 })}
+                      className={`game-card-select ${createForm.gameType === 'UNO' ? 'active' : ''}`}
+                    >
+                      <span style={{ fontSize: '1.5rem' }}>🌈</span>
+                      <span>Uno</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>{t('lobby.maxPlayers')}</label>
                     <select className="input"
                       value={createForm.maxPlayers}
                       onChange={e => setCreateForm(f => ({ ...f, maxPlayers: e.target.value }))}>
                       {[2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
-                  </div>
 
                   <div className="form-group">
                     <label>{t('lobby.aiBots')}</label>

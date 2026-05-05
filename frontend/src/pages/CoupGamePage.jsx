@@ -8,7 +8,21 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CARD_EMOJIS = {
-  DUKE: '👑', ASSASSIN: '🗡️', CAPTAIN: '⚓', AMBASSADOR: '🤝', CONTESSA: '💎'
+  DUKE: '👑',
+  ASSASSIN: '🗡',
+  CAPTAIN: '⚓',
+  AMBASSADOR: '🤝',
+  CONTESSA: '🛡'
+};
+
+const CHARACTER_SHEET = '/assets/coup_characters.png';
+
+const CARD_ART_POS = {
+  DUKE: '0% 0%',
+  ASSASSIN: '50% 0%',
+  CAPTAIN: '100% 0%',
+  AMBASSADOR: '50% 100%',
+  CONTESSA: '100% 100%'
 };
 const CARD_CLASS = {
   DUKE: 'duke', ASSASSIN: 'assassin', CAPTAIN: 'captain', AMBASSADOR: 'ambassador', CONTESSA: 'contessa'
@@ -208,8 +222,15 @@ export default function CoupGamePage() {
                         }}
                         onClick={() => needToLoseCard && !card.revealed && handleChooseCard(card.type)}
                       >
-                        <span style={{ fontSize: '2.5rem' }}>{CARD_EMOJIS[card.type]}</span>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 900, textAlign: 'center' }}>{card.type}</span>
+                        <div className="card-art" style={{
+                          width: '100%', height: '70%',
+                          backgroundImage: `url(${CHARACTER_SHEET})`,
+                          backgroundSize: '300% 200%',
+                          backgroundPosition: CARD_ART_POS[card.type] || '0% 0%',
+                          borderRadius: '8px 8px 0 0',
+                          borderBottom: '2px solid rgba(255,255,255,0.2)'
+                        }} />
+                        <span style={{ fontSize: '0.8rem', fontWeight: 900, textAlign: 'center', marginTop: 4 }}>{card.type}</span>
                         {card.revealed && <span className="badge badge-red" style={{ fontSize: '0.6rem', position: 'absolute', bottom: 10 }}>ĐÃ LẬT</span>}
                         {needToLoseCard && !card.revealed && (
                           <div style={{ position: 'absolute', top: -10, right: -10, background: 'var(--accent-red)', color: 'white', padding: '4px 8px', borderRadius: 8, fontSize: '0.7rem', fontWeight: 900, boxShadow: 'var(--shadow-sm)' }}>CHỌN</div>

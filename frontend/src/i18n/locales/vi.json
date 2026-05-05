@@ -103,6 +103,30 @@
       "block_challenge_success": "{{challenger}} thách thức việc chặn của {{blocker}} — và đã ĐÚNG! {{blocker}} mất 1 lá bài.",
       "turn_start": "--- Lượt của {{player}} ---",
       "winner": "🏆 {{player}} đã chiến thắng trò chơi!"
+    },
+    "kittens": {
+      "logs": {
+        "draw": "{{player}} đã rút một lá bài.",
+        "skip": "{{player}} đã sử dụng Bỏ Lượt.",
+        "attack": "{{player}} đã Tấn Công! Người chơi tiếp theo sẽ phải thực hiện 2 lượt.",
+        "shuffle": "{{player}} đã xáo lại xấp bài.",
+        "see_future": "{{player}} đã nhìn trước tương lai.",
+        "favor": "{{player}} yêu cầu một ân huệ từ {{target}}.",
+        "favor_received": "{{player}} đã nhận được một lá bài từ {{target}}.",
+        "exploding_defuse": "🙀 {{player}} rút phải Mèo Nổ nhưng đã Gỡ Bom thành công!",
+        "exploded": "💥 BÙM! {{player}} đã bị nổ tung và rời cuộc chơi."
+      }
+    },
+    "uno": {
+      "logs": {
+        "draw": "{{player}} đã rút 1 lá bài.",
+        "play": "{{player}} đã đánh lá {{card}}.",
+        "wild": "{{player}} đã đổi màu sang {{color}}.",
+        "skip": "{{player}} bị mất lượt!",
+        "reverse": "Vòng chơi đã bị đảo ngược!",
+        "draw2": "{{player}} phải rút 2 lá!",
+        "draw4": "{{player}} phải rút 4 lá!"
+      }
     }
   }
 }

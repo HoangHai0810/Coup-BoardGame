@@ -103,6 +103,30 @@
       "block_challenge_success": "{{challenger}} challenged {{blocker}}'s block — and was RIGHT! {{blocker}} loses 1 card.",
       "turn_start": "--- {{player}}'s turn ---",
       "winner": "🏆 {{player}} wins the game!"
+    },
+    "kittens": {
+      "logs": {
+        "draw": "{{player}} drew a card.",
+        "skip": "{{player}} used Skip.",
+        "attack": "{{player}} used Attack! The next player must take 2 turns.",
+        "shuffle": "{{player}} shuffled the deck.",
+        "see_future": "{{player}} saw the future.",
+        "favor": "{{player}} asked for a favor from {{target}}.",
+        "favor_received": "{{player}} received a card from {{target}}.",
+        "exploding_defuse": "🙀 {{player}} drew an Exploding Kitten but successfully Defused it!",
+        "exploded": "💥 BOOM! {{player}} exploded and is out of the game."
+      }
+    },
+    "uno": {
+      "logs": {
+        "draw": "{{player}} drew 1 card.",
+        "play": "{{player}} played {{card}}.",
+        "wild": "{{player}} changed color to {{color}}.",
+        "skip": "{{player}} was skipped!",
+        "reverse": "The direction of play has been reversed!",
+        "draw2": "{{player}} draws 2 cards!",
+        "draw4": "{{player}} draws 4 cards!"
+      }
     }
   }
 }

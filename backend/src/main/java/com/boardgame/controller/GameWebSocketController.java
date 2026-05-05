@@ -1,6 +1,12 @@
 package com.boardgame.controller;
 
 import com.boardgame.model.*;
+import com.boardgame.model.kittens.*;
+import com.boardgame.model.uno.*;
+import com.boardgame.service.ExplodingKittensService;
+import com.boardgame.service.UnoGameService;
+import com.boardgame.service.KittensAIService;
+import com.boardgame.service.UnoAIService;
 
 import com.boardgame.service.CoupAIService;
 import com.boardgame.service.CoupGameService;
@@ -29,6 +35,10 @@ public class GameWebSocketController {
 
     private final CoupGameService coupGameService;
     private final CoupAIService coupAIService;
+    private final ExplodingKittensService kittensService;
+    private final KittensAIService kittensAIService;
+    private final UnoGameService unoService;
+    private final UnoAIService unoAIService;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messaging;
@@ -39,6 +49,7 @@ public class GameWebSocketController {
     public record BlockMsg(String card) {}
     public record CardChoiceMsg(String card) {}
     public record ExchangeMsg(List<String> keepCards) {}
+    public record KittensActionMsg(String card, String targetId) {}
 
     // ────────────────────────────────────────────────
     // START GAME
@@ -68,12 +79,29 @@ public class GameWebSocketController {
             players.add(new Player(aiId, aiName, aiAvatar, true));
         }
 
-        GameState state = coupGameService.startGame(roomId, players);
-        room.setStatus(RoomEntity.RoomStatus.IN_GAME);
-        roomRepository.save(room);
-
-        broadcastState(roomId, state);
-        scheduleAITurnIfNeeded(roomId, state);
+        if ("KITTENS".equalsIgnoreCase(room.getGameType())) {
+            List<KittensPlayer> kittensPlayers = players.stream()
+                    .map(p -> new KittensPlayer(p.getId(), p.getUsername(), p.getAvatarUrl(), p.isAI()))
+                    .toList();
+            KittensGameState kittensState = kittensService.startGame(roomId, kittensPlayers);
+            room.setStatus(RoomEntity.RoomStatus.IN_GAME);
+            roomRepository.save(room);
+            broadcastKittensState(roomId, kittensState);
+        } else if ("UNO".equalsIgnoreCase(room.getGameType())) {
+            List<UnoPlayer> unoPlayers = players.stream()
+                    .map(p -> new UnoPlayer(p.getId(), p.getUsername(), p.getAvatarUrl(), p.isAI()))
+                    .toList();
+            UnoGameState unoState = unoService.startGame(roomId, unoPlayers);
+            room.setStatus(RoomEntity.RoomStatus.IN_GAME);
+            roomRepository.save(room);
+            broadcastUnoState(roomId, unoState);
+        } else {
+            GameState state = coupGameService.startGame(roomId, players);
+            room.setStatus(RoomEntity.RoomStatus.IN_GAME);
+            roomRepository.save(room);
+            broadcastState(roomId, state);
+            scheduleAITurnIfNeeded(roomId, state);
+        }
     }
 
     // ────────────────────────────────────────────────
@@ -158,6 +186,60 @@ public class GameWebSocketController {
         }
     }
 
+    @MessageMapping("/game/{roomId}/kittens/play")
+    public void handleKittensAction(@DestinationVariable String roomId,
+                                     @Payload KittensActionMsg msg, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        try {
+            KittensCardType card = KittensCardType.valueOf(msg.card().toUpperCase());
+            KittensGameState state = kittensService.playCard(roomId, user.getId().toString(), card, msg.targetId());
+            broadcastKittensState(roomId, state);
+        } catch (Exception e) {
+            sendError(roomId, user.getId().toString(), e.getMessage());
+        }
+    }
+
+    @MessageMapping("/game/{roomId}/kittens/draw")
+    public void handleKittensDraw(@DestinationVariable String roomId, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        KittensGameState state = kittensService.drawCard(roomId, user.getId().toString());
+        broadcastKittensState(roomId, state);
+    }
+
+    @MessageMapping("/game/{roomId}/kittens/defuse")
+    public void handleKittensDefuse(@DestinationVariable String roomId,
+                                     @Payload Map<String, Integer> payload, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        KittensGameState state = kittensService.defuse(roomId, user.getId().toString(), payload.get("position"));
+        broadcastKittensState(roomId, state);
+    }
+
+    @MessageMapping("/game/{roomId}/kittens/give-card")
+    public void handleKittensGiveCard(@DestinationVariable String roomId,
+                                      @Payload Map<String, String> payload, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        KittensCardType card = KittensCardType.valueOf(payload.get("card").toUpperCase());
+        KittensGameState state = kittensService.giveCard(roomId, user.getId().toString(), card);
+        broadcastKittensState(roomId, state);
+    }
+
+    @MessageMapping("/game/{roomId}/uno/play")
+    public void handleUnoPlay(@DestinationVariable String roomId,
+                               @Payload Map<String, String> payload, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        String cardId = payload.get("cardId");
+        UnoColor color = payload.containsKey("color") ? UnoColor.valueOf(payload.get("color").toUpperCase()) : null;
+        UnoGameState state = unoService.playCard(roomId, user.getId().toString(), cardId, color);
+        broadcastUnoState(roomId, state);
+    }
+
+    @MessageMapping("/game/{roomId}/uno/draw")
+    public void handleUnoDraw(@DestinationVariable String roomId, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        UnoGameState state = unoService.drawCard(roomId, user.getId().toString());
+        broadcastUnoState(roomId, state);
+    }
+
     // ────────────────────────────────────────────────
     // AI AUTOMATION
     // ────────────────────────────────────────────────
@@ -183,6 +265,81 @@ public class GameWebSocketController {
                 scheduler.schedule(() -> processAIExchange(roomId), 900, TimeUnit.MILLISECONDS);
             }
         }
+    }
+
+    private void scheduleKittensAITurnIfNeeded(String roomId, KittensGameState state) {
+        KittensPlayer current = state.getCurrentPlayer();
+        if (state.getPhase() == KittensGameState.Phase.PLAYER_TURN && current.isAI()) {
+            scheduler.schedule(() -> processKittensAITurn(roomId), 1200, TimeUnit.MILLISECONDS);
+        } else if (state.getPhase() == KittensGameState.Phase.EXPLODING && current.isAI()) {
+            scheduler.schedule(() -> processKittensAIDefuse(roomId), 1500, TimeUnit.MILLISECONDS);
+        } else if (state.getPhase() == KittensGameState.Phase.AWAITING_FAVOR) {
+            KittensPlayer target = state.getPlayerById(state.getFavorTargetId());
+            if (target != null && target.isAI()) {
+                scheduler.schedule(() -> processKittensAIFavor(roomId), 1000, TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+
+    private void scheduleUnoAITurnIfNeeded(String roomId, UnoGameState state) {
+        if (state.getPhase() == UnoGameState.Phase.PLAYER_TURN && state.getCurrentPlayer().isAI()) {
+            scheduler.schedule(() -> processUnoAITurn(roomId), 1200, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void processUnoAITurn(String roomId) {
+        UnoGameState state = unoService.getGame(roomId);
+        if (state == null || state.getPhase() != UnoGameState.Phase.PLAYER_TURN) return;
+        UnoPlayer ai = state.getCurrentPlayer();
+        if (!ai.isAI()) return;
+
+        UnoCard card = unoAIService.decideCardToPlay(state, ai);
+        UnoGameState nextState;
+        if (card != null) {
+            UnoColor color = (card.getColor() == UnoColor.WILD) ? unoAIService.decideNewColor(ai) : null;
+            nextState = unoService.playCard(roomId, ai.getId(), card.getId(), color);
+        } else {
+            nextState = unoService.drawCard(roomId, ai.getId());
+        }
+        broadcastUnoState(roomId, nextState);
+    }
+
+    private void processKittensAITurn(String roomId) {
+        KittensGameState state = kittensService.getGame(roomId);
+        if (state == null || state.getPhase() != KittensGameState.Phase.PLAYER_TURN) return;
+        KittensPlayer ai = state.getCurrentPlayer();
+        if (!ai.isAI()) return;
+
+        KittensCardType toPlay = kittensAIService.decideCardToPlay(state, ai);
+        KittensGameState nextState;
+        if (toPlay != null) {
+            String targetId = null;
+            if (toPlay == KittensCardType.FAVOR) {
+                targetId = kittensAIService.decideFavorTarget(state, ai);
+            }
+            nextState = kittensService.playCard(roomId, ai.getId(), toPlay, targetId);
+        } else {
+            nextState = kittensService.drawCard(roomId, ai.getId());
+        }
+        broadcastKittensState(roomId, nextState);
+    }
+
+    private void processKittensAIDefuse(String roomId) {
+        KittensGameState state = kittensService.getGame(roomId);
+        if (state == null || state.getPhase() != KittensGameState.Phase.EXPLODING) return;
+        KittensPlayer ai = state.getCurrentPlayer();
+        int pos = kittensAIService.decideKittenPosition(state.getDrawPile().size());
+        KittensGameState nextState = kittensService.defuse(roomId, ai.getId(), pos);
+        broadcastKittensState(roomId, nextState);
+    }
+
+    private void processKittensAIFavor(String roomId) {
+        KittensGameState state = kittensService.getGame(roomId);
+        if (state == null || state.getPhase() != KittensGameState.Phase.AWAITING_FAVOR) return;
+        KittensPlayer ai = state.getPlayerById(state.getFavorTargetId());
+        KittensCardType card = kittensAIService.decideCardToGive(ai);
+        KittensGameState nextState = kittensService.giveCard(roomId, ai.getId(), card);
+        broadcastKittensState(roomId, nextState);
     }
 
     private void processAITurn(String roomId) {
@@ -373,6 +530,115 @@ public class GameWebSocketController {
                         "revealed", c.isRevealed()
                 )).toList()
         );
+    }
+
+    private void broadcastKittensState(String roomId, KittensGameState state) {
+        Map<String, Object> publicState = buildKittensPublicState(state);
+        messaging.convertAndSend("/topic/game/" + roomId, (Object) publicState);
+
+        for (KittensPlayer p : state.getPlayers()) {
+            if (!p.isAI()) {
+                Map<String, Object> privateInfo = Map.of(
+                        "playerId", p.getId(),
+                        "hand", p.getHand().stream().map(Enum::name).toList()
+                );
+                messaging.convertAndSend("/topic/game/" + roomId + "/private/" + p.getId(), (Object) privateInfo);
+            }
+        }
+
+        scheduleKittensAITurnIfNeeded(roomId, state);
+
+        if (state.getPhase() == KittensGameState.Phase.GAME_OVER) {
+            roomRepository.findById(roomId).ifPresent(room -> {
+                room.setStatus(RoomEntity.RoomStatus.FINISHED);
+                roomRepository.save(room);
+            });
+        }
+    }
+
+    private Map<String, Object> buildKittensPublicState(KittensGameState state) {
+        List<Map<String, Object>> playerViews = state.getPlayers().stream()
+                .map(p -> {
+                    Map<String, Object> pv = new HashMap<>();
+                    pv.put("id", p.getId());
+                    pv.put("username", p.getUsername());
+                    pv.put("avatarUrl", p.getAvatarUrl());
+                    pv.put("handCount", p.getHand().size());
+                    pv.put("exploded", p.isExploded());
+                    pv.put("isAI", p.isAI());
+                    return pv;
+                }).toList();
+
+        Map<String, Object> pub = new HashMap<>();
+        pub.put("gameType", "KITTENS");
+        pub.put("phase", state.getPhase().name());
+        pub.put("players", playerViews);
+        pub.put("currentPlayerId", state.getCurrentPlayer() != null ? state.getCurrentPlayer().getId() : null);
+        pub.put("actionLog", state.getActionLog());
+        pub.put("winnerId", state.getWinnerId());
+        pub.put("discardTop", state.getDiscardPile().isEmpty() ? null : state.getDiscardPile().get(0).name());
+        pub.put("drawPileCount", state.getDrawPile().size());
+        pub.put("turnsLeft", state.getTurnsLeft());
+        pub.put("futureCards", state.getFutureCards());
+        
+        if (state.getPhase() == KittensGameState.Phase.AWAITING_FAVOR) {
+            pub.put("favorTargetId", state.getFavorTargetId());
+            pub.put("favorRequesterId", state.getFavorRequesterId());
+        }
+
+        return pub;
+    }
+
+    private void broadcastUnoState(String roomId, UnoGameState state) {
+        Map<String, Object> publicState = buildUnoPublicState(state);
+        messaging.convertAndSend("/topic/game/" + roomId, (Object) publicState);
+
+        for (UnoPlayer p : state.getPlayers()) {
+            if (!p.isAI()) {
+                Map<String, Object> privateInfo = Map.of(
+                        "playerId", p.getId(),
+                        "hand", p.getHand()
+                );
+                messaging.convertAndSend("/topic/game/" + roomId + "/private/" + p.getId(), (Object) privateInfo);
+            }
+        }
+
+        scheduleUnoAITurnIfNeeded(roomId, state);
+
+        if (state.getPhase() == UnoGameState.Phase.GAME_OVER) {
+            roomRepository.findById(roomId).ifPresent(room -> {
+                room.setStatus(RoomEntity.RoomStatus.FINISHED);
+                roomRepository.save(room);
+            });
+        }
+    }
+
+    private Map<String, Object> buildUnoPublicState(UnoGameState state) {
+        List<Map<String, Object>> playerViews = state.getPlayers().stream()
+                .map(p -> {
+                    Map<String, Object> pv = new HashMap<>();
+                    pv.put("id", p.getId());
+                    pv.put("username", p.getUsername());
+                    pv.put("avatarUrl", p.getAvatarUrl());
+                    pv.put("handCount", p.getHand().size());
+                    pv.put("isAI", p.isAI());
+                    return pv;
+                }).toList();
+
+        Map<String, Object> pub = new HashMap<>();
+        pub.put("gameType", "UNO");
+        pub.put("phase", state.getPhase().name());
+        pub.put("players", playerViews);
+        pub.put("currentPlayerId", state.getCurrentPlayer().getId());
+        pub.put("actionLog", state.getActionLog());
+        pub.put("winnerId", state.getWinnerId());
+        pub.put("activeColor", state.getActiveColor().name());
+        pub.put("activeValue", state.getActiveValue().name());
+        pub.put("drawPileCount", state.getDrawPile().size());
+        pub.put("clockwise", state.isClockwise());
+        pub.put("discardTop", state.getDiscardPile().get(0));
+
+        return pub;
     }
 
     private void sendError(String roomId, String userId, String message) {

@@ -77,7 +77,8 @@ export default function Lobby() {
       const res = await api.post('/rooms', {
         name: `${user.username} vs AI`,
         maxPlayers: 4,
-        aiCount: 3
+        aiCount: 3,
+        gameType: createForm.gameType
       });
       navigate(`/room/${res.data.id}`);
     } catch { toast.error('Lỗi tạo game'); }

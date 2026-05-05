@@ -7,22 +7,10 @@ services:
     plan: free
     region: singapore
     envVars:
-      - key: PORT
-        value: 8080
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-      - key: DB_HOST
         fromDatabase:
           name: boardgame-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: boardgame-db
-          property: port
-      - key: DB_NAME
-        fromDatabase:
-          name: boardgame-db
-          property: database
+          property: jdbcInternalConnectionString
       - key: SPRING_DATASOURCE_DRIVER
         value: org.postgresql.Driver
       - key: SPRING_DATASOURCE_USERNAME

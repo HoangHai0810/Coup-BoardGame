@@ -109,15 +109,28 @@ export default function UnoPage() {
         <div className="my-hand-area">
           <div className="hand-scroll">
             {myHand.map((card) => (
-              <motion.div 
-                key={card.id}
-                whileHover={{ y: -30, scale: 1.1 }}
-                className="uno-card"
-                style={{ background: COLOR_MAP[card.color] }}
-                onClick={() => handlePlayCard(card)}
-              >
-                <span className="value">{card.value}</span>
-              </motion.div>
+                <motion.div 
+                  key={card.id}
+                  whileHover={{ y: -30, scale: 1.1 }}
+                  className="uno-player-card"
+                  style={{ 
+                    cursor: 'pointer',
+                    width: 100, height: 150,
+                    background: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color]
+                  }}
+                  onClick={() => handlePlayCard(card)}
+                >
+                  <div className="card-art-container" style={{ background: 'transparent' }}>
+                    <div style={{
+                      fontSize: '3rem', fontWeight: 900, color: 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%',
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                    }}>
+                      {card.value}
+                    </div>
+                  </div>
+                  <div className="card-label" style={{ background: 'white', textAlign: 'center', fontSize: '10px' }}>{card.color}</div>
+                </motion.div>
             ))}
           </div>
           <div className={`turn-banner ${isMyTurn ? 'my-turn' : ''}`}>
@@ -152,14 +165,40 @@ export default function UnoPage() {
       </AnimatePresence>
 
       {/* Game Over */}
-      {gameState.phase === 'GAME_OVER' && (
-        <div className="game-over-overlay">
-          <div className="game-over-card">
-            <h1>🏆 {gameState.players.find(p => p.id === gameState.winnerId)?.username} THẮNG!</h1>
-            <button className="btn btn-primary" onClick={() => navigate('/lobby')}>Về sảnh</button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {gameState.phase === 'GAME_OVER' && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="game-over-overlay"
+            style={{ zIndex: 9999, position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)' }}
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} 
+              className="game-over-card"
+              style={{ pointerEvents: 'auto', background: 'white', padding: 40, borderRadius: 32, textAlign: 'center' }}
+            >
+              <h1 className="display-font" style={{ color: 'var(--text-primary)', fontSize: '2.5rem', marginBottom: 10 }}>
+                {t('game.gameOver')}
+              </h1>
+              <div className="winner-announcement" style={{ marginBottom: 32 }}>
+                <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                  {gameState.players?.find(p => p.id === gameState.winnerId)?.username} đã chiến thắng!
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                <button onClick={() => navigate(`/room/${roomId}`)} className="btn btn-primary" style={{ padding: '14px 28px', zIndex: 10000, cursor: 'pointer' }}>
+                  Chơi lại
+                </button>
+                <button onClick={() => navigate('/lobby')} className="btn btn-ghost" style={{ padding: '14px 28px', zIndex: 10000, cursor: 'pointer' }}>
+                  Về sảnh
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx>{`
         .uno-page {

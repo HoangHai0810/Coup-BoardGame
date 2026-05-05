@@ -200,9 +200,15 @@ export default function ExplodingKittensPage() {
                         <h3>🔮 Nhìn trước tương lai</h3>
                         <div className="future-cards">
                             {gameState.futureCards.map((card, i) => (
-                                <div key={i} className="future-card-mini" style={{ background: CARD_COLORS[card] }}>
-                                    <span className="emoji">{CARD_EMOJIS[card]}</span>
-                                    <span className="name">{card}</span>
+                                <div key={i} className="kittens-card" style={{ background: CARD_COLORS[card], width: 70, height: 100 }}>
+                                    <div className="card-art-container">
+                                        <div className="card-art" style={{
+                                          backgroundImage: `url(${KITTENS_SHEET})`,
+                                          backgroundSize: '200% 200%',
+                                          backgroundPosition: KITTEN_ART_POS[card] || '0% 0%',
+                                        }} />
+                                    </div>
+                                    <div className="card-label" style={{ fontSize: '0.5rem', padding: '2px 0' }}>{card}</div>
                                 </div>
                             ))}
                         </div>
@@ -220,8 +226,14 @@ export default function ExplodingKittensPage() {
                         <div className="hand-scroll">
                             {myHand.map((card, idx) => (
                                 <div key={idx} className="kittens-card" style={{ background: CARD_COLORS[card] }} onClick={() => handleGiveCard(card)}>
-                                    <span className="emoji">{CARD_EMOJIS[card]}</span>
-                                    <span className="name">{card}</span>
+                                    <div className="card-art-container">
+                                        <div className="card-art" style={{
+                                          backgroundImage: `url(${KITTENS_SHEET})`,
+                                          backgroundSize: '200% 200%',
+                                          backgroundPosition: KITTEN_ART_POS[card] || '0% 0%',
+                                        }} />
+                                    </div>
+                                    <div className="card-label" style={{ fontSize: '0.6rem' }}>{card}</div>
                                 </div>
                             ))}
                         </div>
@@ -241,15 +253,15 @@ export default function ExplodingKittensPage() {
                         style={{ background: CARD_COLORS[card] }}
                         onClick={() => handlePlayCard(card)}
                     >
-                        <div className="card-art" style={{
-                          width: '100%', height: '70%',
-                          backgroundImage: `url(${KITTENS_SHEET})`,
-                          backgroundSize: '200% 200%',
-                          backgroundPosition: KITTEN_ART_POS[card] || '0% 0%',
-                          opacity: KITTEN_ART_POS[card] ? 1 : 0.2
-                        }} />
-                        {!KITTEN_ART_POS[card] && <span className="emoji">{CARD_EMOJIS[card]}</span>}
-                        <span className="name" style={{ fontSize: '0.6rem' }}>{card}</span>
+                        <div className="card-art-container">
+                          <div className="card-art" style={{
+                            backgroundImage: `url(${KITTENS_SHEET})`,
+                            backgroundSize: '200% 200%',
+                            backgroundPosition: KITTEN_ART_POS[card] || '0% 0%',
+                            opacity: KITTEN_ART_POS[card] ? 1 : 0.2
+                          }} />
+                        </div>
+                        <div className="card-label" style={{ fontSize: '0.6rem' }}>{card}</div>
                     </motion.div>
                 ))}
             </div>
@@ -282,12 +294,36 @@ export default function ExplodingKittensPage() {
       {/* Game Over */}
       <AnimatePresence>
         {gameState.phase === 'GAME_OVER' && (
-          <div className="game-over-overlay">
-            <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="game-over-card">
-              <h1>🎉 {gameState.players.find(p => p.id === gameState.winnerId)?.username} THẮNG!</h1>
-              <button className="btn btn-primary" onClick={() => navigate('/lobby')}>Về sảnh</button>
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="game-over-overlay"
+            style={{ zIndex: 9999 }}
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} 
+              className="game-over-card"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <h1 className="display-font" style={{ color: 'var(--text-primary)', fontSize: '2.5rem', marginBottom: 10 }}>
+                {t('game.gameOver')}
+              </h1>
+              <div className="winner-announcement" style={{ marginBottom: 32 }}>
+                <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                  {gameState.players?.find(p => p.id === gameState.winnerId)?.username} đã chiến thắng!
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                <button onClick={() => navigate(`/room/${roomId}`)} className="btn btn-primary" style={{ padding: '14px 28px', zIndex: 10000 }}>
+                  Chơi lại
+                </button>
+                <button onClick={() => navigate('/lobby')} className="btn btn-ghost" style={{ padding: '14px 28px', zIndex: 10000 }}>
+                  Về sảnh
+                </button>
+              </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

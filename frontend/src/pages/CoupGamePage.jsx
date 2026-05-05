@@ -160,10 +160,16 @@ export default function CoupGamePage() {
                       initial={{ rotateY: 90 }} animate={{ rotateY: 0 }} transition={{ delay: 0.2 }}
                       style={{ width: 36, height: 50, borderRadius: 8, flexShrink: 0, borderWidth: 2 }} />
                   ))}
-                  {p.revealedCards?.map((c, i) => (
+                   {p.revealedCards?.map((c, i) => (
                     <div key={`rev-${i}`} className={`coup-card ${CARD_CLASS[c]} revealed`}
-                      style={{ width: 36, height: 50, borderRadius: 8, fontSize: '0.8rem', flexShrink: 0, borderWidth: 2 }}>
-                      {CARD_EMOJIS[c]}
+                      style={{ width: 44, height: 60, borderRadius: 8, flexShrink: 0, borderWidth: 2, padding: 0 }}>
+                      <div className="card-art-container" style={{ borderRadius: '6px 6px 0 0' }}>
+                        <div className="card-art" style={{
+                          backgroundImage: `url(${CHARACTER_SHEET})`,
+                          backgroundPosition: CARD_ART_POS[c] || '0% 0%',
+                        }} />
+                      </div>
+                      <div className="card-label" style={{ fontSize: '0.5rem', padding: '2px 0' }}>{c}</div>
                     </div>
                   ))}
                 </div>
@@ -222,15 +228,13 @@ export default function CoupGamePage() {
                         }}
                         onClick={() => needToLoseCard && !card.revealed && handleChooseCard(card.type)}
                       >
-                        <div className="card-art" style={{
-                          width: '100%', height: '70%',
-                          backgroundImage: `url(${CHARACTER_SHEET})`,
-                          backgroundSize: '300% 200%',
-                          backgroundPosition: CARD_ART_POS[card.type] || '0% 0%',
-                          borderRadius: '8px 8px 0 0',
-                          borderBottom: '2px solid rgba(255,255,255,0.2)'
-                        }} />
-                        <span style={{ fontSize: '0.8rem', fontWeight: 900, textAlign: 'center', marginTop: 4 }}>{card.type}</span>
+                        <div className="card-art-container">
+                          <div className="card-art" style={{
+                            backgroundImage: `url(${CHARACTER_SHEET})`,
+                            backgroundPosition: CARD_ART_POS[card.type] || '0% 0%',
+                          }} />
+                        </div>
+                        <div className="card-label">{card.type}</div>
                         {card.revealed && <span className="badge badge-red" style={{ fontSize: '0.6rem', position: 'absolute', bottom: 10 }}>ĐÃ LẬT</span>}
                         {needToLoseCard && !card.revealed && (
                           <div style={{ position: 'absolute', top: -10, right: -10, background: 'var(--accent-red)', color: 'white', padding: '4px 8px', borderRadius: 8, fontSize: '0.7rem', fontWeight: 900, boxShadow: 'var(--shadow-sm)' }}>CHỌN</div>
@@ -352,32 +356,33 @@ export default function CoupGamePage() {
       {/* Game Over Overlay */}
       <AnimatePresence>
         {gameState.phase === 'GAME_OVER' && (
-          <motion.div className="game-over-overlay"
+          <motion.div 
+            key="game-over"
+            className="game-over-overlay"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ zIndex: 9999 }}
           >
-            <motion.div className="game-over-card"
-              initial={{ scale: 0.5, y: 100 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', bounce: 0.5 }}
+            <motion.div 
+              className="game-over-card"
+              initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }}
+              style={{ pointerEvents: 'auto' }}
             >
-              <div style={{ fontSize: '5rem', marginBottom: 16 }}>
-                {gameState.winnerId === user?.id ? '🏆' : '💀'}
+              <h1 className="display-font" style={{ color: 'var(--text-primary)', fontSize: '2.5rem', marginBottom: 10 }}>
+                {t('game.gameOver')}
+              </h1>
+              <div className="winner-announcement" style={{ marginBottom: 32 }}>
+                <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                  {gameState.players?.find(p => p.id === gameState.winnerId)?.username} {t('game.logs.winner_simple') || 'đã chiến thắng!'}
+                </span>
               </div>
-              <h2 className="display-font" style={{
-                fontSize: '3rem', marginBottom: 16, fontWeight: 900,
-                color: gameState.winnerId === user?.id ? 'var(--accent-primary)' : 'var(--text-secondary)'
-              }}>
-                {gameState.winnerId === user?.id ? t('game.winner') : t('game.gameOver')}
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontSize: '1.2rem', fontWeight: 800 }}>
-                {gameState.winnerId === user?.id
-                  ? '🎉 Bạn là người sống sót cuối cùng!'
-                  : `🏆 ${gameState.players?.find(p => p.id === gameState.winnerId)?.username} đã chiến thắng!`}
-              </p>
+
               <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-                <button onClick={() => navigate(`/room/${roomId}`)} className="btn btn-primary" style={{ padding: '16px 32px' }}>
-                  🔄 Chơi lại
+                <button onClick={() => navigate(`/room/${roomId}`)} className="btn btn-primary" style={{ padding: '14px 28px' }}>
+                  {t('game.replay') || 'Chơi lại'}
                 </button>
-                <button onClick={() => navigate('/lobby')} className="btn btn-ghost" style={{ padding: '16px 32px' }}>
-                  ← {t('game.returnLobby')}
+                <button onClick={() => navigate('/lobby')} className="btn btn-ghost" style={{ padding: '14px 28px' }}>
+                  {t('game.returnLobby')}
                 </button>
               </div>
             </motion.div>
@@ -430,6 +435,35 @@ function ResponsePanel({ pendingAction, players, userId, phase, onChallenge, onB
   const actor = players?.find(p => p.id === pendingAction.actorId);
   const isBlockPhase = phase === 'AWAITING_BLOCK_RESPONSE';
   const isTarget = pendingAction.targetId === userId;
+  const isActor = pendingAction.actorId === userId;
+
+  // If I am the actor, I am just waiting for others
+  if (isActor) {
+    return (
+      <div className="response-panel waiting">
+        <p style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>
+          ⌛ Đang đợi người khác phản hồi hành động của bạn...
+        </p>
+      </div>
+    );
+  }
+
+  // If I am NOT the target and NOT the actor, I should see a minimal UI
+  if (!isTarget && !isBlockPhase) {
+    return (
+      <div className="response-panel minimal">
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          🎭 <b>{actor?.username}</b> {actionDescription(pendingAction, { players }, t)}
+        </p>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Đang tự động bỏ qua...</span>
+            <button className="btn btn-sm btn-ghost" onClick={onChallenge} style={{ padding: '4px 12px', fontSize: '0.75rem' }}>
+              Nghi ngờ (Thách thức)
+            </button>
+        </div>
+      </div>
+    );
+  }
 
   const blockCards = {
     FOREIGN_AID: ['DUKE'],
@@ -438,34 +472,16 @@ function ResponsePanel({ pendingAction, players, userId, phase, onChallenge, onB
   };
   const canBlock = !isBlockPhase && isTarget && blockCards[pendingAction.actionType];
 
-  const [timeLeft, setTimeLeft] = useState(3);
-  const isAutoPassing = !isBlockPhase && pendingAction.actorId !== userId && pendingAction.targetId !== userId;
-
-  useEffect(() => {
-    if (!isAutoPassing) return;
-    setTimeLeft(3);
-    const interval = setInterval(() => {
-      setTimeLeft(prev => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isAutoPassing, pendingAction]);
-
   return (
     <div className={`response-panel ${isBlockPhase ? 'block-challenge' : ''}`}>
       <p style={{ fontWeight: 800, marginBottom: 20, fontSize: '1.1rem', color: isBlockPhase ? '#1976d2' : '#e65100' }}>
         {isBlockPhase
-          ? `🛡 ${players?.find(p => p.id === pendingAction.blockerId)?.username} chặn — thách thức không?`
+          ? `🛡 ${players?.find(p => p.id === pendingAction.blockerId)?.username} chặn — bạn có thách thức không?`
           : `🎭 ${actor?.username} ${actionDescription(pendingAction, { players }, t)}`}
       </p>
 
-      {isAutoPassing && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-          ⏳ Tự động bỏ qua sau {timeLeft}s...
-        </div>
-      )}
-
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {!isBlockPhase && isChallengeableAction(pendingAction.actionType) && (
+        {isChallengeableAction(pendingAction.actionType) && (
           <button className="btn btn-danger" onClick={onChallenge}>
             {t('game.challengeBtn')}
           </button>
@@ -521,15 +537,20 @@ function ExchangePanel({ myCards, drawnCards, onConfirm, t }) {
               className={`coup-card ${CARD_CLASS[card] || ''}`}
               style={{
                 cursor: 'pointer',
+                width: 90, height: 130,
                 outline: isSelected ? '4px solid var(--accent-primary)' : '4px solid transparent',
                 transform: isSelected ? 'translateY(-10px) rotate(2deg)' : undefined,
-                opacity: drawnCards.includes(card) && idx >= myCards.length ? undefined : undefined
               }}
               onClick={() => toggle(card, idx)}
             >
-              <span style={{ fontSize: '1.6rem' }}>{CARD_EMOJIS[card]}</span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{card}</span>
-              {idx >= myCards.length && <span className="badge badge-green" style={{ fontSize: '0.6rem', marginTop: 4 }}>NEW</span>}
+              <div className="card-art-container">
+                <div className="card-art" style={{
+                  backgroundImage: `url(${CHARACTER_SHEET})`,
+                  backgroundPosition: CARD_ART_POS[card] || '0% 0%',
+                }} />
+              </div>
+              <div className="card-label" style={{ fontSize: '0.7rem' }}>{card}</div>
+              {idx >= myCards.length && <span className="badge badge-green" style={{ fontSize: '0.6rem', position: 'absolute', top: 5, right: 5 }}>NEW</span>}
             </div>
           );
         })}

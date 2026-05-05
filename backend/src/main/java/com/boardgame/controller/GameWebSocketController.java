@@ -198,6 +198,7 @@ public class GameWebSocketController {
                     decision.action(), decision.targetId());
             broadcastState(roomId, newState);
             scheduleAIResponseIfNeeded(roomId, newState);
+            scheduleAITurnIfNeeded(roomId, newState);
         } catch (Exception e) {
             log.error("AI turn error for room {}: {}", roomId, e.getMessage());
         }
@@ -225,11 +226,13 @@ public class GameWebSocketController {
                     GameState newState = coupGameService.challenge(roomId, ai.getId());
                     broadcastState(roomId, newState);
                     scheduleAIResponseIfNeeded(roomId, newState);
+                    scheduleAITurnIfNeeded(roomId, newState);
                     return;
                 } else {
                     GameState newState = coupGameService.allowAction(roomId, ai.getId());
                     broadcastState(roomId, newState);
                     scheduleAIResponseIfNeeded(roomId, newState);
+                    scheduleAITurnIfNeeded(roomId, newState);
                     return;
                 }
             } else {
@@ -239,6 +242,7 @@ public class GameWebSocketController {
                     GameState newState = coupGameService.block(roomId, ai.getId(), blockDecision.blockingCard());
                     broadcastState(roomId, newState);
                     scheduleAIResponseIfNeeded(roomId, newState);
+                    scheduleAITurnIfNeeded(roomId, newState);
                     return;
                 }
 
@@ -247,6 +251,7 @@ public class GameWebSocketController {
                     GameState newState = coupGameService.challenge(roomId, ai.getId());
                     broadcastState(roomId, newState);
                     scheduleAIResponseIfNeeded(roomId, newState);
+                    scheduleAITurnIfNeeded(roomId, newState);
                     return;
                 }
 
@@ -254,6 +259,7 @@ public class GameWebSocketController {
                 GameState newState = coupGameService.allowAction(roomId, ai.getId());
                 broadcastState(roomId, newState);
                 scheduleAIResponseIfNeeded(roomId, newState);
+                scheduleAITurnIfNeeded(roomId, newState);
                 return;
             }
         }
@@ -293,7 +299,6 @@ public class GameWebSocketController {
     // ────────────────────────────────────────────────
 
     private void broadcastState(String roomId, GameState state) {
-        // Build public view (hides alive card types from other players)
         Map<String, Object> publicState = buildPublicState(state);
         messaging.convertAndSend("/topic/game/" + roomId, (Object) publicState);
 
@@ -301,7 +306,7 @@ public class GameWebSocketController {
         for (Player p : state.getPlayers()) {
             if (!p.isAI()) {
                 Map<String, Object> privateInfo = buildPrivateInfo(p);
-                messaging.convertAndSendToUser(p.getId(), "/queue/private", privateInfo);
+                messaging.convertAndSend("/topic/game/" + roomId + "/private/" + p.getId(), (Object) privateInfo);
             }
         }
 

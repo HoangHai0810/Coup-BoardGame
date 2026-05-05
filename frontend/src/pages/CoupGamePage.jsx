@@ -34,10 +34,8 @@ export default function CoupGamePage() {
         setTargetAction(null);
       }
     });
-    const unsub2 = subscribe(`/user/queue/private`, data => {
-      if (data.playerId === user?.id) {
-        setMyCards(data.cards);
-      }
+    const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
+      setMyCards(data.cards);
     });
     return () => { unsub1(); unsub2(); };
   }, [roomId, user?.id, subscribe]);
@@ -317,7 +315,9 @@ export default function CoupGamePage() {
             <div className="action-log" style={{ flex: 1 }}>
               <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>📜 {t('game.actionLog')}</div>
               {gameState.actionLog?.map((log, i) => (
-                <div key={i} className="action-log-entry" style={{ padding: '8px 0', borderBottom: '2px dashed var(--border)' }}>{log}</div>
+                <div key={i} className="action-log-entry" style={{ padding: '8px 0', borderBottom: '2px dashed var(--border)' }}>
+                  {typeof log === 'string' ? log : t(log.key, log.params)}
+                </div>
               ))}
               {gameState.actionLog?.length === 0 && (
                 <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Game bắt đầu...</div>

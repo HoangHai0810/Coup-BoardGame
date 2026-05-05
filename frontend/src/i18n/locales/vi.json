@@ -77,6 +77,32 @@
       "steal": "Ăn cắp (+2 xu)",
       "exchange": "Đổi bài",
       "coup": "Đảo chính (-7 xu)"
+    },
+    "logs": {
+      "started": "Trò chơi bắt đầu! Lượt của {{player}}.",
+      "income": "{{player}} lấy Thu nhập (+1 xu).",
+      "coup": "{{player}} thực hiện Đảo chính nhắm vào {{target}}!",
+      "foreign_aid_claim": "{{player}} đang lấy Viện trợ (+2 xu). Có thể bị chặn bởi Duke.",
+      "tax_claim": "{{player}} tuyên bố có Duke và thu Thuế (+3 xu).",
+      "assassinate_claim": "{{player}} tuyên bố có Assassin và ám sát {{target}}.",
+      "steal_claim": "{{player}} tuyên bố có Captain và ăn cắp xu từ {{target}}.",
+      "exchange_claim": "{{player}} tuyên bố có Ambassador và muốn đổi bài.",
+      "block_accepted": "Hành động chặn của {{blocker}} đã được chấp nhận. Hành động bị hủy.",
+      "block_claim": "{{player}} tuyên bố có {{card}} và chặn hành động.",
+      "card_lost": "{{player}} đã mất nhân vật {{card}}.",
+      "exchange_done": "{{player}} đã đổi bài với xấp bài chung.",
+      "foreign_aid_success": "{{player}} nhận Viện trợ (+2 xu).",
+      "tax_success": "{{player}} thu Thuế (+3 xu).",
+      "assassinate_success": "{{player}} ám sát {{target}}!",
+      "steal_success": "{{player}} ăn cắp {{amount}} xu từ {{target}}.",
+      "exchange_empty": "Xấp bài đã hết — bỏ qua đổi bài.",
+      "exchange_drawing": "{{player}} rút 2 lá bài để chọn.",
+      "challenge_failed": "{{challenger}} đã thách thức {{actor}} tuyên bố có {{card}} — và đã SAI! {{challenger}} mất 1 lá bài.",
+      "challenge_success": "{{challenger}} đã thách thức {{actor}} — và đã ĐÚNG! {{actor}} mất 1 lá bài.",
+      "block_challenge_failed": "{{challenger}} thách thức việc chặn của {{blocker}} — và đã SAI! {{challenger}} mất 1 lá bài.",
+      "block_challenge_success": "{{challenger}} thách thức việc chặn của {{blocker}} — và đã ĐÚNG! {{blocker}} mất 1 lá bài.",
+      "turn_start": "--- Lượt của {{player}} ---",
+      "winner": "🏆 {{player}} đã chiến thắng trò chơi!"
     }
   }
 }

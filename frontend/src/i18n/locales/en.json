@@ -77,6 +77,32 @@
       "steal": "Steal (+2 coins)",
       "exchange": "Exchange cards",
       "coup": "Coup (-7 coins)"
+    },
+    "logs": {
+      "started": "Game started! {{player}}'s turn.",
+      "income": "{{player}} took Income (+1 coin).",
+      "coup": "{{player}} launched a Coup against {{target}}!",
+      "foreign_aid_claim": "{{player}} is taking Foreign Aid (+2 coins). Can be blocked by Duke.",
+      "tax_claim": "{{player}} claims Duke and takes Tax (+3 coins).",
+      "assassinate_claim": "{{player}} claims Assassin and targets {{target}}.",
+      "steal_claim": "{{player}} claims Captain and steals from {{target}}.",
+      "exchange_claim": "{{player}} claims Ambassador and wants to exchange cards.",
+      "block_accepted": "Block by {{blocker}} was accepted. Action cancelled.",
+      "block_claim": "{{player}} claims {{card}} and blocks the action.",
+      "card_lost": "{{player}} lost their {{card}} influence.",
+      "exchange_done": "{{player}} exchanged cards with the deck.",
+      "foreign_aid_success": "{{player}} received Foreign Aid (+2 coins).",
+      "tax_success": "{{player}} collected Tax (+3 coins).",
+      "assassinate_success": "{{player}} assassinates {{target}}!",
+      "steal_success": "{{player}} steals {{amount}} coins from {{target}}.",
+      "exchange_empty": "Deck empty — exchange skipped.",
+      "exchange_drawing": "{{player}} draws 2 cards to choose from.",
+      "challenge_failed": "{{challenger}} challenged {{actor}}'s {{card}} claim — and was WRONG! {{challenger}} loses 1 card.",
+      "challenge_success": "{{challenger}} challenged {{actor}} — and was RIGHT! {{actor}} loses 1 card.",
+      "block_challenge_failed": "{{challenger}} challenged {{blocker}}'s block — and was WRONG! {{challenger}} loses 1 card.",
+      "block_challenge_success": "{{challenger}} challenged {{blocker}}'s block — and was RIGHT! {{blocker}} loses 1 card.",
+      "turn_start": "--- {{player}}'s turn ---",
+      "winner": "🏆 {{player}} wins the game!"
     }
   }
 }

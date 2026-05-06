@@ -16,6 +16,7 @@ export default function Lobby() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', maxPlayers: 4, aiCount: 0, gameType: 'COUP' });
   const [creating, setCreating] = useState(false);
+  const [showQuickSelect, setShowQuickSelect] = useState(false);
   const [joinCode, setJoinCode] = useState('');
 
   const fetchRooms = async () => {
@@ -71,14 +72,15 @@ export default function Lobby() {
   };
 
   // Quick play vs AI
-  const handleQuickPlay = async () => {
+  const handleQuickPlay = async (type) => {
     setCreating(true);
+    setShowQuickSelect(false);
     try {
       const res = await api.post('/rooms', {
-        name: `${user.username} vs AI`,
-        maxPlayers: 4,
-        aiCount: 3,
-        gameType: createForm.gameType
+        name: `${user.username} vs AI (${type})`,
+        maxPlayers: type === 'UNO' ? 6 : 4,
+        aiCount: type === 'UNO' ? 5 : 3,
+        gameType: type
       });
       navigate(`/room/${res.data.id}`);
     } catch { toast.error('Lỗi tạo game'); }
@@ -95,11 +97,27 @@ export default function Lobby() {
             <h1 style={{ fontSize: '2rem', marginBottom: 4, color: 'var(--text-primary)' }}>🎮 {t('lobby.title')}</h1>
             <p style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{t('lobby.welcome', { name: user?.username })}</p>
           </motion.div>
-          <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button onClick={handleQuickPlay} className="btn btn-green" disabled={creating}>
-              {t('lobby.quickPlay')}
+          <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', position: 'relative' }}>
+            <button onClick={() => setShowQuickSelect(!showQuickSelect)} className="btn btn-green" disabled={creating}>
+              ⚡ {t('lobby.quickPlay')}
             </button>
-            <button onClick={() => setShowCreate(true)} className="btn btn-primary">
+            <AnimatePresence>
+              {showQuickSelect && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                  style={{
+                    position: 'absolute', top: '110%', right: 0, background: 'white', 
+                    padding: 12, borderRadius: 16, boxShadow: 'var(--shadow-lg)',
+                    zIndex: 100, display: 'flex', gap: 8, border: '1px solid var(--border)'
+                  }}
+                >
+                  <button onClick={() => handleQuickPlay('COUP')} className="btn btn-sm btn-primary">Coup</button>
+                  <button onClick={() => handleQuickPlay('KITTENS')} className="btn btn-sm btn-orange" style={{ background: '#f57c00' }}>Mèo nổ</button>
+                  <button onClick={() => handleQuickPlay('UNO')} className="btn btn-sm btn-blue">Uno</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button onClick={() => setShowCreate(true)} className="btn btn-ghost" style={{ border: '2px solid var(--primary)' }}>
               ＋ {t('lobby.createRoom')}
             </button>
           </motion.div>

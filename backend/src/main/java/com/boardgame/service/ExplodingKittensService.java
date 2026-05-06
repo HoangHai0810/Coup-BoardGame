@@ -36,11 +36,11 @@ public class ExplodingKittensService {
         addCards(deck, KittensCardType.CAT_MELON, 4);
         Collections.shuffle(deck);
 
-        // 2. Deal 7 cards + 1 Defuse to each player
+        // 2. Deal 4 cards + 1 Defuse to each player (Total 5)
         for (KittensPlayer p : state.getPlayers()) {
             p.setHand(new ArrayList<>());
             p.getHand().add(KittensCardType.DEFUSE);
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < 4; i++) {
                 p.getHand().add(deck.remove(0));
             }
         }
@@ -67,45 +67,73 @@ public class ExplodingKittensService {
         for (int i = 0; i < count; i++) deck.add(type);
     }
 
-    public KittensGameState playCard(String roomId, String playerId, KittensCardType cardType, String targetId) {
+    public KittensGameState playCard(String roomId, String playerId, List<KittensCardType> cardTypes, String targetId, KittensCardType requestedCard) {
         KittensGameState state = games.get(roomId);
         KittensPlayer player = state.getPlayerById(playerId);
         
-        if (!player.hasCard(cardType)) throw new IllegalArgumentException("You don't have this card");
-        
-        player.removeCard(cardType);
-        state.getDiscardPile().add(0, cardType);
-        
-        switch (cardType) {
-            case SKIP -> {
-                state.addLog("kittens.logs.skip", Map.of("player", player.getUsername()));
-                state.setFutureCards(new ArrayList<>());
-                state.advanceTurn();
+        for (KittensCardType type : cardTypes) {
+            if (!player.hasCard(type)) throw new IllegalArgumentException("You don't have these cards");
+            player.removeCard(type);
+            state.getDiscardPile().add(0, type);
+        }
+
+        if (cardTypes.size() == 1) {
+            KittensCardType cardType = cardTypes.get(0);
+            switch (cardType) {
+                case SKIP -> {
+                    state.addLog("kittens.logs.skip", Map.of("player", player.getUsername()));
+                    state.setFutureCards(new ArrayList<>());
+                    state.advanceTurn();
+                }
+                case ATTACK -> {
+                    state.addLog("kittens.logs.attack", Map.of("player", player.getUsername()));
+                    state.setFutureCards(new ArrayList<>());
+                    state.setTurnsLeft(state.getTurnsLeft() + 2); // Rule: Next player must take 2 turns
+                    state.advanceTurn();
+                }
+                case SHUFFLE -> {
+                    state.addLog("kittens.logs.shuffle", Map.of("player", player.getUsername()));
+                    Collections.shuffle(state.getDrawPile());
+                    state.setFutureCards(new ArrayList<>());
+                }
+                case SEE_THE_FUTURE -> {
+                    state.addLog("kittens.logs.see_future", Map.of("player", player.getUsername()));
+                    List<KittensCardType> pile = state.getDrawPile();
+                    state.setFutureCards(new ArrayList<>(pile.subList(0, Math.min(3, pile.size()))));
+                }
+                case FAVOR -> {
+                    state.addLog("kittens.logs.favor", Map.of("player", player.getUsername(), "target", state.getPlayerById(targetId).getUsername()));
+                    state.setPhase(KittensGameState.Phase.AWAITING_FAVOR);
+                    state.setFavorTargetId(targetId);
+                    state.setFavorRequesterId(playerId);
+                }
+                default -> {}
             }
-            case ATTACK -> {
-                state.addLog("kittens.logs.attack", Map.of("player", player.getUsername()));
-                state.setFutureCards(new ArrayList<>());
-                state.setTurnsLeft(state.getTurnsLeft() + 1);
-                state.advanceTurn();
-                state.setTurnsLeft(state.getTurnsLeft() + 1); 
+        } else if (cardTypes.size() == 2 && cardTypes.get(0) == cardTypes.get(1)) {
+            // Combo 2: Steal random
+            KittensPlayer target = state.getPlayerById(targetId);
+            if (!target.getHand().isEmpty()) {
+                KittensCardType stolen = target.getHand().remove(new Random().nextInt(target.getHand().size()));
+                player.getHand().add(stolen);
+                state.addLog("kittens.logs.combo2", Map.of("player", player.getUsername(), "target", target.getUsername()));
             }
-            case SHUFFLE -> {
-                state.addLog("kittens.logs.shuffle", Map.of("player", player.getUsername()));
-                Collections.shuffle(state.getDrawPile());
-                state.setFutureCards(new ArrayList<>());
+        } else if (cardTypes.size() == 3 && cardTypes.get(0) == cardTypes.get(1) && cardTypes.get(1) == cardTypes.get(2)) {
+            // Combo 3: Name card and steal
+            KittensPlayer target = state.getPlayerById(targetId);
+            if (target.hasCard(requestedCard)) {
+                target.removeCard(requestedCard);
+                player.getHand().add(requestedCard);
+                state.addLog("kittens.logs.combo3_success", Map.of("player", player.getUsername(), "target", target.getUsername(), "card", requestedCard.toString()));
+            } else {
+                state.addLog("kittens.logs.combo3_fail", Map.of("player", player.getUsername(), "target", target.getUsername()));
             }
-            case SEE_THE_FUTURE -> {
-                state.addLog("kittens.logs.see_future", Map.of("player", player.getUsername()));
-                List<KittensCardType> pile = state.getDrawPile();
-                state.setFutureCards(new ArrayList<>(pile.subList(0, Math.min(3, pile.size()))));
+        } else if (cardTypes.size() == 5) {
+            // Combo 5: Pick from discard
+            if (requestedCard != null && state.getDiscardPile().contains(requestedCard)) {
+                state.getDiscardPile().remove(requestedCard);
+                player.getHand().add(requestedCard);
+                state.addLog("kittens.logs.combo5", Map.of("player", player.getUsername(), "card", requestedCard.toString()));
             }
-            case FAVOR -> {
-                state.addLog("kittens.logs.favor", Map.of("player", player.getUsername(), "target", state.getPlayerById(targetId).getUsername()));
-                state.setPhase(KittensGameState.Phase.AWAITING_FAVOR);
-                state.setFavorTargetId(targetId);
-                state.setFavorRequesterId(playerId);
-            }
-            default -> {}
         }
         return state;
     }

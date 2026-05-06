@@ -687,6 +687,34 @@ h1, h2, h3 { font-weight: 900; line-height: 1.2; color: var(--text-primary); }
   letter-spacing: 0.5px;
 }
 
+/* ─── Character Sprites (Slicing) ─── */
+.art-duke { background-position: 0% 0%; }
+.art-assassin { background-position: 50% 0%; }
+.art-captain { background-position: 100% 0%; }
+.art-ambassador { background-position: 50% 100%; }
+.art-contessa { background-position: 100% 100%; }
+
+/* Kittens Sprites */
+.art-kitten { background-position: 0% 0%; }
+.art-defuse { background-position: 100% 0%; }
+.art-attack { background-position: 0% 100%; }
+.art-skip { background-position: 100% 100%; }
+
+.coup-card .card-art {
+  background-size: 300% 200%;
+}
+
+.kittens-card .card-art {
+  background-size: 200% 200%;
+}
+
+.card-art {
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  image-rendering: -webkit-optimize-contrast;
+}
+
 @media (max-width: 768px) {
   .action-grid { grid-template-columns: repeat(2, 1fr); }
   .coup-card { width: 70px; height: 100px; }

@@ -49,7 +49,7 @@ public class GameWebSocketController {
     public record BlockMsg(String card) {}
     public record CardChoiceMsg(String card) {}
     public record ExchangeMsg(List<String> keepCards) {}
-    public record KittensActionMsg(String card, String targetId) {}
+    public record KittensActionMsg(String card, List<String> cardTypes, String targetId, String requestedCard) {}
 
     // ────────────────────────────────────────────────
     // START GAME
@@ -62,7 +62,6 @@ public class GameWebSocketController {
         if (room == null || !room.getHostId().equals(user.getId().toString())) return;
         if (room.getStatus() != RoomEntity.RoomStatus.WAITING) return;
 
-        // Build player list
         List<Player> players = new ArrayList<>();
         for (String pid : room.getPlayerIds()) {
             userRepository.findById(UUID.fromString(pid)).ifPresent(u ->
@@ -70,7 +69,6 @@ public class GameWebSocketController {
                             u.getAvatarUrl() != null ? u.getAvatarUrl() : "", false)));
         }
 
-        // Add AI bots
         String[] aiNames = {"Roberta", "Magnus", "Isabella", "Viktor", "Sophia"};
         for (int i = 0; i < room.getAiCount() && players.size() < room.getMaxPlayers(); i++) {
             String aiId = "AI_" + (i + 1);
@@ -191,10 +189,23 @@ public class GameWebSocketController {
                                      @Payload KittensActionMsg msg, Authentication auth) {
         UserEntity user = (UserEntity) auth.getPrincipal();
         try {
-            KittensCardType card = KittensCardType.valueOf(msg.card().toUpperCase());
-            KittensGameState state = kittensService.playCard(roomId, user.getId().toString(), card, msg.targetId());
+            List<KittensCardType> types = new ArrayList<>();
+            if (msg.cardTypes() != null && !msg.cardTypes().isEmpty()) {
+                for (String s : msg.cardTypes()) types.add(KittensCardType.valueOf(s.toUpperCase()));
+            } else if (msg.card() != null) {
+                types.add(KittensCardType.valueOf(msg.card().toUpperCase()));
+            }
+
+            KittensCardType req = null;
+            if (msg.requestedCard() != null) {
+                req = KittensCardType.valueOf(msg.requestedCard().toUpperCase());
+            }
+
+            KittensGameState state = kittensService.playCard(roomId, user.getId().toString(), types, msg.targetId(), req);
             broadcastKittensState(roomId, state);
+            scheduleKittensAITurnIfNeeded(roomId, state);
         } catch (Exception e) {
+            log.error("Kittens play error", e);
             sendError(roomId, user.getId().toString(), e.getMessage());
         }
     }
@@ -317,7 +328,7 @@ public class GameWebSocketController {
             if (toPlay == KittensCardType.FAVOR) {
                 targetId = kittensAIService.decideFavorTarget(state, ai);
             }
-            nextState = kittensService.playCard(roomId, ai.getId(), toPlay, targetId);
+            nextState = kittensService.playCard(roomId, ai.getId(), List.of(toPlay), targetId, null);
         } else {
             nextState = kittensService.drawCard(roomId, ai.getId());
         }

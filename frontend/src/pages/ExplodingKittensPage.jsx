@@ -22,19 +22,30 @@ const CARD_EMOJIS = {
   CAT_MELON: '🍉'
 };
 
+const KITTENS_IMAGES = {
+  EXPLODING_KITTEN: '/assets/kittens_exploding_card_single_1777971975774.png',
+  DEFUSE: '/assets/kittens_defuse_card_single_new_1777972381705.png',
+  ATTACK: '/assets/kittens_attack_card_single_1777972477188.png',
+  SKIP: '/assets/kittens_skip_card_single_1777972836070.png',
+  FAVOR: '/assets/kittens_favor_card_single_1777972917335.png',
+  SHUFFLE: '/assets/kittens_shuffle_card_single_1777973283160.png',
+  SEE_THE_FUTURE: '/assets/kittens_future_card_single_1777973696097.png',
+  NOPE: '/assets/kittens_nope_card_single_v2_1778036390192.png'
+};
+
 const CARD_COLORS = {
-  EXPLODING_KITTEN: '#b71c1c',
-  DEFUSE: '#2e7d32',
-  ATTACK: '#e65100',
-  SKIP: '#0277bd',
-  FAVOR: '#6a1b9a',
-  SHUFFLE: '#1565c0',
-  SEE_THE_FUTURE: '#6a1b9b',
-  NOPE: '#c62828',
-  CAT_BEARD: '#795548',
-  CAT_TACO: '#fbc02d',
-  CAT_RAINBOW: '#ec407a',
-  CAT_MELON: '#9ccc65'
+  EXPLODING_KITTEN: '#000000',
+  DEFUSE: '#4cd137',
+  ATTACK: '#e84118',
+  SKIP: '#0097e6',
+  FAVOR: '#9c88ff',
+  SHUFFLE: '#fbc531',
+  SEE_THE_FUTURE: '#487eb0',
+  NOPE: '#2f3640',
+  CAT_BEARD: '#7f8c8d',
+  CAT_TACO: '#7f8c8d',
+  CAT_RAINBOW: '#7f8c8d',
+  CAT_MELON: '#7f8c8d'
 };
 
 const KITTENS_SHEET = '/assets/kittens_cards.png';
@@ -55,7 +66,9 @@ export default function ExplodingKittensPage() {
 
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
-  const [targetAction, setTargetAction] = useState(null); // { card, targetId }
+  const [targetAction, setTargetAction] = useState(null); // { card, type }
+  const [selectedCards, setSelectedCards] = useState([]); // Array of indices
+  const [requestedCard, setRequestedCard] = useState(null);
   const logEndRef = useRef(null);
 
   useEffect(() => {
@@ -80,13 +93,40 @@ export default function ExplodingKittensPage() {
   const isMyTurn = gameState.currentPlayerId === user?.id;
   const me = gameState.players.find(p => p.id === user?.id);
 
-  const handlePlayCard = (card) => {
+  const handlePlayCard = (card, index) => {
     if (!isMyTurn) return;
-    if (card === 'FAVOR') {
-        setTargetAction({ card });
+
+    // Toggle selection
+    if (selectedCards.includes(index)) {
+      setSelectedCards(selectedCards.filter(i => i !== index));
+      return;
+    }
+
+    if (selectedCards.length > 0) {
+        setSelectedCards([...selectedCards, index]);
         return;
     }
-    send(`/app/game/${roomId}/kittens/play`, { card });
+
+    // Single card play logic
+    if (['ATTACK', 'FAVOR'].includes(card)) {
+        setTargetAction({ card, type: card });
+    } else {
+        send(`/app/game/${roomId}/kittens/play`, { cardTypes: [card] });
+    }
+  };
+
+  const handleComboPlay = () => {
+    const cards = selectedCards.map(i => myHand[i]);
+    if (cards.length === 2 && cards[0] === cards[1]) {
+        setTargetAction({ card: 'COMBO2', type: 'COMBO2' });
+    } else if (cards.length === 3 && cards[0] === cards[1] && cards[1] === cards[2]) {
+        setTargetAction({ card: 'COMBO3', type: 'COMBO3' });
+    } else if (cards.length === 5 && new Set(cards).size === 5) {
+        setTargetAction({ card: 'COMBO5', type: 'COMBO5' });
+    } else {
+        toast.error("Combo không hợp lệ!");
+        setSelectedCards([]);
+    }
   };
 
   const handleDraw = () => {
@@ -96,8 +136,14 @@ export default function ExplodingKittensPage() {
 
   const handleTarget = (targetId) => {
     if (targetAction) {
-        send(`/app/game/${roomId}/kittens/play`, { card: targetAction.card, targetId });
+        const cards = selectedCards.length > 0 ? selectedCards.map(i => myHand[i]) : [targetAction.card];
+        send(`/app/game/${roomId}/kittens/play`, { 
+            cardTypes: cards, 
+            targetId,
+            requestedCard: requestedCard 
+        });
         setTargetAction(null);
+        setSelectedCards([]);
     }
   };
 
@@ -203,10 +249,15 @@ export default function ExplodingKittensPage() {
                                 <div key={i} className="kittens-card" style={{ background: CARD_COLORS[card], width: 70, height: 100 }}>
                                     <div className="card-art-container">
                                         <div className="card-art" style={{
-                                          backgroundImage: `url(${KITTENS_SHEET})`,
-                                          backgroundSize: '200% 200%',
-                                          backgroundPosition: KITTEN_ART_POS[card] || '0% 0%',
-                                        }} />
+                                          backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
+                                          backgroundSize: 'cover',
+                                          backgroundPosition: 'center',
+                                          backgroundColor: card === 'NOPE' ? '#c0392b' : 'transparent',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          color: 'white', fontWeight: 900, fontSize: '0.8rem'
+                                        }}>
+                                            {card === 'NOPE' && !KITTENS_IMAGES[card] && 'NOPE'}
+                                        </div>
                                     </div>
                                     <div className="card-label" style={{ fontSize: '0.5rem', padding: '2px 0' }}>{card}</div>
                                 </div>
@@ -228,10 +279,15 @@ export default function ExplodingKittensPage() {
                                 <div key={idx} className="kittens-card" style={{ background: CARD_COLORS[card] }} onClick={() => handleGiveCard(card)}>
                                     <div className="card-art-container">
                                         <div className="card-art" style={{
-                                          backgroundImage: `url(${KITTENS_SHEET})`,
-                                          backgroundSize: '200% 200%',
-                                          backgroundPosition: KITTEN_ART_POS[card] || '0% 0%',
-                                        }} />
+                                          backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
+                                          backgroundSize: 'cover',
+                                          backgroundPosition: 'center',
+                                          backgroundColor: card === 'NOPE' ? '#c0392b' : 'transparent',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          color: 'white', fontWeight: 900, fontSize: '0.8rem'
+                                        }}>
+                                            {card === 'NOPE' && !KITTENS_IMAGES[card] && 'NOPE'}
+                                        </div>
                                     </div>
                                     <div className="card-label" style={{ fontSize: '0.6rem' }}>{card}</div>
                                 </div>
@@ -251,22 +307,37 @@ export default function ExplodingKittensPage() {
                         whileHover={{ y: -30, scale: 1.1 }}
                         className="kittens-card"
                         style={{ background: CARD_COLORS[card] }}
-                        onClick={() => handlePlayCard(card)}
+                        onClick={() => handlePlayCard(card, idx)}
                     >
-                        <div className="card-art-container">
+                        <div className="card-art-container" style={{ 
+                            border: selectedCards.includes(idx) ? '4px solid var(--accent-primary)' : 'none',
+                            transform: selectedCards.includes(idx) ? 'scale(1.05)' : 'none'
+                        }}>
                           <div className="card-art" style={{
-                            backgroundImage: `url(${KITTENS_SHEET})`,
-                            backgroundSize: '200% 200%',
-                            backgroundPosition: KITTEN_ART_POS[card] || '0% 0%',
-                            opacity: KITTEN_ART_POS[card] ? 1 : 0.2
-                          }} />
+                            backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundColor: card === 'NOPE' ? '#c0392b' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'white', fontWeight: 900, fontSize: '1rem'
+                          }}>
+                              {card === 'NOPE' && !KITTENS_IMAGES[card] && 'NOPE'}
+                          </div>
                         </div>
                         <div className="card-label" style={{ fontSize: '0.6rem' }}>{card}</div>
+                        {selectedCards.includes(idx) && (
+                            <div className="badge badge-primary" style={{ position: 'absolute', top: -5, right: -5 }}>✓</div>
+                        )}
                     </motion.div>
                 ))}
             </div>
             
             <div className="my-info">
+                {selectedCards.length > 0 && (
+                    <button className="btn btn-primary btn-sm" onClick={handleComboPlay} style={{ marginBottom: 10 }}>
+                        🔥 Đánh Combo ({selectedCards.length} lá)
+                    </button>
+                )}
                 <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`}>
                     {isMyTurn ? 'Lượt của bạn!' : `Đợi ${gameState.players.find(p => p.id === gameState.currentPlayerId)?.username}...`}
                 </div>

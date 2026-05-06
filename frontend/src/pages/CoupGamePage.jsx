@@ -7,22 +7,12 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const CARD_EMOJIS = {
-  DUKE: '👑',
-  ASSASSIN: '🗡',
-  CAPTAIN: '⚓',
-  AMBASSADOR: '🤝',
-  CONTESSA: '🛡'
-};
-
-const CHARACTER_SHEET = '/assets/coup_characters.png';
-
-const CARD_ART_POS = {
-  DUKE: '0% 0%',
-  ASSASSIN: '50% 0%',
-  CAPTAIN: '100% 0%',
-  AMBASSADOR: '50% 100%',
-  CONTESSA: '100% 100%'
+const CARD_IMAGES = {
+  DUKE: '/assets/coup_duke_card_1777970293754.png',
+  ASSASSIN: '/assets/coup_assassin_card_single_1777970882549.png',
+  CAPTAIN: '/assets/coup_captain_card_single_retry_1777971535119.png',
+  AMBASSADOR: '/assets/coup_ambassador_card_single_1777971641716.png',
+  CONTESSA: '/assets/coup_contessa_card_single_1777971721011.png'
 };
 const CARD_CLASS = {
   DUKE: 'duke', ASSASSIN: 'assassin', CAPTAIN: 'captain', AMBASSADOR: 'ambassador', CONTESSA: 'contessa'
@@ -165,8 +155,9 @@ export default function CoupGamePage() {
                       style={{ width: 44, height: 60, borderRadius: 8, flexShrink: 0, borderWidth: 2, padding: 0 }}>
                       <div className="card-art-container" style={{ borderRadius: '6px 6px 0 0' }}>
                         <div className="card-art" style={{
-                          backgroundImage: `url(${CHARACTER_SHEET})`,
-                          backgroundPosition: CARD_ART_POS[c] || '0% 0%',
+                          backgroundImage: `url(${CARD_IMAGES[c]})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center'
                         }} />
                       </div>
                       <div className="card-label" style={{ fontSize: '0.5rem', padding: '2px 0' }}>{c}</div>
@@ -230,8 +221,9 @@ export default function CoupGamePage() {
                       >
                         <div className="card-art-container">
                           <div className="card-art" style={{
-                            backgroundImage: `url(${CHARACTER_SHEET})`,
-                            backgroundPosition: CARD_ART_POS[card.type] || '0% 0%',
+                            backgroundImage: `url(${CARD_IMAGES[card.type]})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center'
                           }} />
                         </div>
                         <div className="card-label">{card.type}</div>
@@ -545,8 +537,9 @@ function ExchangePanel({ myCards, drawnCards, onConfirm, t }) {
             >
               <div className="card-art-container">
                 <div className="card-art" style={{
-                  backgroundImage: `url(${CHARACTER_SHEET})`,
-                  backgroundPosition: CARD_ART_POS[card] || '0% 0%',
+                  backgroundImage: `url(${CARD_IMAGES[card]})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
                 }} />
               </div>
               <div className="card-label" style={{ fontSize: '0.7rem' }}>{card}</div>

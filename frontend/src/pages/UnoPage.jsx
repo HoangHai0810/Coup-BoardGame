@@ -6,13 +6,10 @@ import { useSocket } from '../contexts/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 
-const COLOR_MAP = {
-  RED: '#ff3b30',
-  YELLOW: '#ffcc00',
-  GREEN: '#34c759',
-  BLUE: '#007aff',
-  WILD: '#2c3e50'
-};
+const UNO_ASSETS = '/assets/uno_assets_pack_1777970075772.png'; // Path to the generated image
+const WILD_IMG = '/assets/uno_wild_card_premium_1778036505397.png';
+const DRAW4_IMG = '/assets/uno_wild_draw4_premium_1778036593265.png';
+const COLOR_MAP = { RED: '#e74c3c', BLUE: '#3498db', GREEN: '#2ecc71', YELLOW: '#f1c40f', WILD: '#2c3e50' };
 
 export default function UnoPage() {
   const { roomId } = useParams();
@@ -86,7 +83,7 @@ export default function UnoPage() {
         <div className="board-center">
           <div className="deck-area">
             <div className="pile draw-pile" onClick={handleDraw}>
-              <div className="uno-card-back">UNO</div>
+              <div className="uno-card-back" style={{ backgroundImage: `url(${UNO_ASSETS})`, backgroundSize: '200% 100%', backgroundPosition: '0% 0%' }}></div>
             </div>
             <div className="pile discard-pile" style={{ background: COLOR_MAP[gameState.activeColor] }}>
               <div className="uno-card-front">
@@ -120,14 +117,22 @@ export default function UnoPage() {
                   }}
                   onClick={() => handlePlayCard(card)}
                 >
-                  <div className="card-art-container" style={{ background: 'transparent' }}>
-                    <div style={{
-                      fontSize: '3rem', fontWeight: 900, color: 'white',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%',
-                      textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-                    }}>
-                      {card.value}
-                    </div>
+                  <div className="card-art-container" style={{ background: card.color === 'WILD' ? 'transparent' : 'rgba(255,255,255,0.1)' }}>
+                    {card.color === 'WILD' ? (
+                      <div className="card-art" style={{
+                        backgroundImage: `url(${card.value === 'WILD_DRAW_4' ? DRAW4_IMG : WILD_IMG})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                      }} />
+                    ) : (
+                      <div style={{
+                        fontSize: '3rem', fontWeight: 900, color: 'white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%',
+                        textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                      }}>
+                        {card.value}
+                      </div>
+                    )}
                   </div>
                   <div className="card-label" style={{ background: 'white', textAlign: 'center', fontSize: '10px' }}>{card.color}</div>
                 </motion.div>

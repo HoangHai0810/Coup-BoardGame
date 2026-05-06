@@ -37,8 +37,6 @@ public class UserEntity implements Principal {
     @Column(length = 500)
     private String avatarUrl;
 
-    @Builder.Default
-    private boolean isOnline = false;
 
     private LocalDateTime lastSeen;
 

@@ -37,7 +37,7 @@ public class UserController {
 
     @GetMapping("/online")
     public ResponseEntity<?> getOnlineUsers() {
-        List<Map<String, Object>> online = userRepository.findByIsOnlineTrue()
+        List<Map<String, Object>> online = userRepository.findByOnlineTrue()
                 .stream()
                 .map(this::toDto)
                 .toList();

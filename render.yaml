@@ -26,7 +26,7 @@ services:
       - key: SPRING_JPA_DDL_AUTO
         value: update
       - key: CORS_ALLOWED_ORIGINS
-        value: https://boardgame-frontend-k2so.onrender.com
+        value: https://boardgame-frontend-k2so.onrender.com,https://boardgame-frontend.onrender.com,http://localhost:5173,http://localhost:3000
       - key: JWT_SECRET
         value: boardgame-prod-secret-key-2024-replace-this-in-dashboard
 

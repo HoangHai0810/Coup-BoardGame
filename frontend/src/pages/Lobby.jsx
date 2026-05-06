@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
+import ChatBox from '../components/ChatBox';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +14,7 @@ export default function Lobby() {
   const { t } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', maxPlayers: 4, aiCount: 0, gameType: 'COUP' });
   const [creating, setCreating] = useState(false);
@@ -27,9 +29,20 @@ export default function Lobby() {
     finally { setLoading(false); }
   };
 
+  const fetchOnlineUsers = async () => {
+    try {
+      const res = await api.get('/users/online');
+      setOnlineUsers(res.data);
+    } catch {}
+  };
+
   useEffect(() => {
     fetchRooms();
-    const interval = setInterval(fetchRooms, 5000);
+    fetchOnlineUsers();
+    const interval = setInterval(() => {
+        fetchRooms();
+        fetchOnlineUsers();
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -148,90 +161,120 @@ export default function Lobby() {
           </form>
         </motion.div>
 
-        {/* Room list */}
-        <h2 style={{ fontSize: '1.4rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-          {t('lobby.publicRooms')}
-          <span className="badge badge-green">
-            {rooms.length}
-          </span>
-        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32, alignItems: 'start' }}>
+          <div className="main-content">
+            {/* Room list */}
+            <h2 style={{ fontSize: '1.4rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              {t('lobby.publicRooms')}
+              <span className="badge badge-green">
+                {rooms.length}
+              </span>
+            </h2>
 
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-            <div className="spinner" />
-          </div>
-        ) : rooms.length === 0 ? (
-          <motion.div 
-            className="card" 
-            initial={{ scale: 0.9, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }}
-            style={{ padding: 48, textAlign: 'center', borderStyle: 'dashed' }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎭</div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontWeight: 700 }}>
-              Không có phòng nào đang mở — hãy tạo phòng đầu tiên!
-            </p>
-            <button onClick={() => setShowCreate(true)} className="btn btn-primary">
-              {t('lobby.createRoom')}
-            </button>
-          </motion.div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-            {rooms.map((room, i) => (
+            {loading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
+                <div className="spinner" />
+              </div>
+            ) : rooms.length === 0 ? (
               <motion.div 
-                key={room.id} 
                 className="card" 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                style={{ padding: 24 }}
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }}
+                style={{ padding: 48, textAlign: 'center', borderStyle: 'dashed' }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: 6, color: 'var(--text-primary)' }}>{room.name}</h3>
-                    <code style={{
-                      fontSize: '0.8rem', color: '#f57f17', fontWeight: 800,
-                      background: '#fff8e1', padding: '4px 10px', borderRadius: 6, border: '2px solid #ffe082'
-                    }}>
-                      #{room.id}
-                    </code>
-                  </div>
-                  <span className="badge badge-gold" style={{ height: 'fit-content' }}>{room.gameType}</span>
-                </div>
-
-                <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                    👥 {room.players.length}/{room.maxPlayers}
-                  </span>
-                  {room.aiCount > 0 && (
-                    <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                      🤖 {room.aiCount} AI
-                    </span>
-                  )}
-                </div>
-
-                {/* Player avatars */}
-                <div style={{ display: 'flex', gap: -8, marginBottom: 20, flexWrap: 'wrap' }}>
-                  {room.players.map(p => (
-                    <img key={p.id} src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`}
-                      alt={p.username} title={p.username}
-                      style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid white', marginLeft: -8, zIndex: 1, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                    />
-                  ))}
-                </div>
-
-                <button
-                  className="btn btn-primary"
-                  style={{ width: '100%' }}
-                  onClick={() => handleJoin(room.id)}
-                  disabled={room.players.length >= room.maxPlayers - room.aiCount}
-                >
-                  {room.players.length >= room.maxPlayers - room.aiCount ? 'Full' : `${t('lobby.joinBtn')} →`}
+                <div style={{ fontSize: '3rem', marginBottom: 16 }}>🎭</div>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontWeight: 700 }}>
+                  Không có phòng nào đang mở — hãy tạo phòng đầu tiên!
+                </p>
+                <button onClick={() => setShowCreate(true)} className="btn btn-primary">
+                  {t('lobby.createRoom')}
                 </button>
               </motion.div>
-            ))}
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+                {rooms.map((room, i) => (
+                  <motion.div 
+                    key={room.id} 
+                    className="card" 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    style={{ padding: 24 }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.2rem', marginBottom: 6, color: 'var(--text-primary)' }}>{room.name}</h3>
+                        <code style={{
+                          fontSize: '0.8rem', color: '#f57f17', fontWeight: 800,
+                          background: '#fff8e1', padding: '4px 10px', borderRadius: 6, border: '2px solid #ffe082'
+                        }}>
+                          #{room.id}
+                        </code>
+                      </div>
+                      <span className="badge badge-gold" style={{ height: 'fit-content' }}>{room.gameType}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                        👥 {room.players.length}/{room.maxPlayers}
+                      </span>
+                      {room.aiCount > 0 && (
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                          🤖 {room.aiCount} AI
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Player avatars */}
+                    <div style={{ display: 'flex', gap: -8, marginBottom: 20, flexWrap: 'wrap' }}>
+                      {room.players.map(p => (
+                        <img key={p.id} src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`}
+                          alt={p.username} title={p.username}
+                          style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid white', marginLeft: -8, zIndex: 1, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      className="btn btn-primary"
+                      style={{ width: '100%' }}
+                      onClick={() => handleJoin(room.id)}
+                      disabled={room.players.length >= room.maxPlayers - room.aiCount}
+                    >
+                      {room.players.length >= room.maxPlayers - room.aiCount ? 'Full' : `${t('lobby.joinBtn')} →`}
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <ChatBox roomId="global" />
+            
+            <div className="card" style={{ padding: 20 }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                🟢 {t('lobby.onlinePlayers') || 'Người chơi Online'}
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {onlineUsers.length === 0 ? (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Chỉ có bạn đang online</p>
+                ) : (
+                  onlineUsers.map(u => (
+                    <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <img src={u.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${u.username}`} 
+                        alt={u.username} 
+                        style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid var(--accent-green)' }} 
+                      />
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{u.username}</span>
+                      {u.id === user?.id && <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>(Bạn)</span>}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
 
       {/* Create Room Modal */}

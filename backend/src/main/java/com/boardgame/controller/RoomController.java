@@ -28,7 +28,8 @@ public class RoomController {
     public record CreateRoomRequest(
             @NotBlank String name,
             @Min(0) @Max(5) int aiCount,
-            @Min(2) @Max(6) int maxPlayers
+            @Min(2) @Max(6) int maxPlayers,
+            String gameType
     ) {}
 
     @GetMapping
@@ -52,6 +53,7 @@ public class RoomController {
                 .hostId(me.getId().toString())
                 .aiCount(req.aiCount())
                 .maxPlayers(req.maxPlayers())
+                .gameType(req.gameType() != null ? req.gameType().toUpperCase() : "COUP")
                 .playerIds(new ArrayList<>(List.of(me.getId().toString())))
                 .build();
         roomRepository.save(room);

@@ -51,6 +51,9 @@ public class RoomEntity {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
     public enum RoomStatus {
         WAITING, IN_GAME, FINISHED
     }

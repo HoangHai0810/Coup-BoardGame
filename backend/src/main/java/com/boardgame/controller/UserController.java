@@ -35,6 +35,15 @@ public class UserController {
         return ResponseEntity.ok(results);
     }
 
+    @GetMapping("/online")
+    public ResponseEntity<?> getOnlineUsers() {
+        List<Map<String, Object>> online = userRepository.findByIsOnlineTrue()
+                .stream()
+                .map(this::toDto)
+                .toList();
+        return ResponseEntity.ok(online);
+    }
+
     private Map<String, Object> toDto(UserEntity user) {
         return Map.of(
                 "id", user.getId().toString(),

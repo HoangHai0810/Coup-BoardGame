@@ -13,6 +13,10 @@ public class UnoGameService {
 
     private final Map<String, UnoGameState> games = new ConcurrentHashMap<>();
 
+    public void removeGame(String roomId) {
+        games.remove(roomId);
+    }
+
     public UnoGameState getGame(String roomId) {
         return games.get(roomId);
     }

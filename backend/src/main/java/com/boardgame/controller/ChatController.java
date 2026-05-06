@@ -30,7 +30,7 @@ public class ChatController {
                 "timestamp", LocalDateTime.now().toString(),
                 "type", "GLOBAL"
         );
-        messaging.convertAndSend("/topic/chat/global", payload);
+        messaging.convertAndSend("/topic/chat/global", (Object) payload);
     }
 
     @MessageMapping("/chat/room/{roomId}")
@@ -43,6 +43,6 @@ public class ChatController {
                 "timestamp", LocalDateTime.now().toString(),
                 "type", "ROOM"
         );
-        messaging.convertAndSend("/topic/chat/room/" + roomId, payload);
+        messaging.convertAndSend("/topic/chat/room/" + roomId, (Object) payload);
     }
 }

@@ -13,6 +13,10 @@ public class ExplodingKittensService {
 
     private final Map<String, KittensGameState> games = new ConcurrentHashMap<>();
 
+    public void removeGame(String roomId) {
+        games.remove(roomId);
+    }
+
     public KittensGameState getGame(String roomId) {
         return games.get(roomId);
     }

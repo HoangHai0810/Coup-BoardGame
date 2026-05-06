@@ -28,7 +28,7 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         value: https://boardgame-frontend-k2so.onrender.com
       - key: JWT_SECRET
-        generateValue: true
+        value: boardgame-prod-secret-key-2024-replace-this-in-dashboard
 
   - type: web
     name: boardgame-frontend

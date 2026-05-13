@@ -21,7 +21,12 @@ export default function RoomPage() {
   useEffect(() => {
     api.get(`/rooms/${roomId}`)
       .then(res => setRoom(res.data))
-      .catch(() => { toast.error('Phòng không tồn tại'); navigate('/lobby'); })
+      .catch(err => {
+        if (err.response?.status === 404) {
+          toast.error('Phòng không tồn tại'); 
+          navigate('/lobby');
+        }
+      })
       .finally(() => setLoading(false));
 
     const interval = setInterval(() => {
@@ -31,7 +36,12 @@ export default function RoomPage() {
           const gamePath = res.data.gameType.toLowerCase();
           navigate(`/game/${gamePath}/${roomId}`);
         }
-      }).catch(() => {});
+      }).catch(err => {
+        if (err.response?.status === 404) {
+          toast.error('Phòng đã bị giải tán');
+          navigate('/lobby');
+        }
+      });
     }, 2000);
 
     return () => clearInterval(interval);

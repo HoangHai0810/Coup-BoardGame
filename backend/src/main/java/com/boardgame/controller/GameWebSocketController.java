@@ -102,6 +102,23 @@ public class GameWebSocketController {
         }
     }
 
+    @MessageMapping("/game/{roomId}/connect")
+    public void connectToGame(@DestinationVariable String roomId, Authentication auth) {
+        RoomEntity room = roomRepository.findById(roomId).orElse(null);
+        if (room == null || room.getStatus() != RoomEntity.RoomStatus.IN_GAME) return;
+
+        if ("KITTENS".equalsIgnoreCase(room.getGameType())) {
+            com.boardgame.model.kittens.KittensGameState state = kittensService.getGame(roomId);
+            if (state != null) broadcastKittensState(roomId, state);
+        } else if ("UNO".equalsIgnoreCase(room.getGameType())) {
+            com.boardgame.model.uno.UnoGameState state = unoService.getGame(roomId);
+            if (state != null) broadcastUnoState(roomId, state);
+        } else {
+            GameState state = coupGameService.getGame(roomId);
+            if (state != null) broadcastState(roomId, state);
+        }
+    }
+
     // ────────────────────────────────────────────────
     // PLAYER ACTIONS
     // ────────────────────────────────────────────────

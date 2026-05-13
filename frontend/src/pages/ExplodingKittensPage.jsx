@@ -81,8 +81,11 @@ export default function ExplodingKittensPage() {
       setMyHand(data.hand || []);
     });
 
+    // Request current game state
+    send(`/app/game/${roomId}/connect`, {});
+
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe]);
+  }, [roomId, user?.id, subscribe, send]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });

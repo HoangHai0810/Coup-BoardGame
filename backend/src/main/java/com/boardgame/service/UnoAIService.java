@@ -8,7 +8,6 @@ import java.util.*;
 public class UnoAIService {
 
     public UnoCard decideCardToPlay(UnoGameState state, UnoPlayer ai) {
-        // Find a card that matches color or value
         return ai.getHand().stream()
                 .filter(c -> c.matches(new UnoCard("", state.getActiveColor(), state.getActiveValue())))
                 .findFirst()
@@ -16,7 +15,6 @@ public class UnoAIService {
     }
 
     public UnoColor decideNewColor(UnoPlayer ai) {
-        // Pick the color ai has the most of
         Map<UnoColor, Integer> counts = new HashMap<>();
         for (UnoCard c : ai.getHand()) {
             if (c.getColor() != UnoColor.WILD) {

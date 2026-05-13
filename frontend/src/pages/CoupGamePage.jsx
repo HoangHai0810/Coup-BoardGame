@@ -41,8 +41,12 @@ export default function CoupGamePage() {
     const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
       setMyCards(data.cards);
     });
+    
+    // Request current game state
+    send(`/app/game/${roomId}/connect`, {});
+    
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe]);
+  }, [roomId, user?.id, subscribe, send]);
 
   const sendAction = useCallback((action, targetId = null) => {
     send(`/app/game/${roomId}/action`, { action, targetId });

@@ -29,7 +29,24 @@
     "maxPlayers": "Số người chơi",
     "aiBots": "Số lượng Bot AI",
     "cancel": "Hủy",
-    "createBtn": "Tạo phòng"
+    "createBtn": "Tạo phòng",
+    "onlinePlayers": "Đang online",
+    "roomCreated": "Phòng đã được tạo thành công!",
+    "errorLoadRooms": "Không thể tải danh sách phòng",
+    "defaultRoomName": "Phòng của {{username}}",
+    "errorCreateRoom": "Tạo phòng thất bại",
+    "errorJoinRoom": "Không thể vào phòng",
+    "errorInvalidCode": "Mã phòng không hợp lệ",
+    "quickPlayVsAI": "{{username}} đấu với máy ({{type}})",
+    "errorCreateGame": "Lỗi tạo game",
+    "noRooms": "Không có phòng nào đang mở — hãy tạo phòng đầu tiên!",
+    "full": "Đã đầy",
+    "onlyYouOnline": "Chỉ có bạn đang online",
+    "roomName": "Tên phòng"
+  },
+  "games": {
+    "kittens": "Mèo nổ",
+    "monopoly": "Cờ Tỉ Phú"
   },
   "room": {
     "title": "Phòng: {{code}}",
@@ -58,18 +75,59 @@
     "confirm": "Xác nhận",
     "winner": "🎉 NGƯỜI THẮNG CUỘC!",
     "gameOver": "Trận đấu kết thúc",
-    "returnLobby": "Về sảnh",
+    "returnLobby": "Về sảnh chờ",
+    "mustCoup": "Bắt buộc phải lật đổ! (>= 10 vàng)",
+    "cards": {
+      "DUKE": "Công tước",
+      "ASSASSIN": "Sát thủ",
+      "CAPTAIN": "Thuyền trưởng",
+      "AMBASSADOR": "Sứ giả",
+      "CONTESSA": "Nữ tước"
+    },
     "eliminated": "Đã bị loại 💀",
+    "replay": "Chơi lại",
+    "waitingOthers": "Đang đợi người khác phản hồi...",
+    "autoSkipping": "Đang tự động bỏ qua...",
+    "challengeHint": "Nghi ngờ (Thách thức)",
+    "blockedBy": "Bị chặn bởi {{player}}!",
+    "targetSelectHint": "🎯 Chọn mục tiêu cho {{action}} — click vào avatar bên trên",
+    "cancel": "Hủy",
+    "gameStarted": "Trận đấu bắt đầu...",
     "actions": {
       "income": "Lấy thu nhập (+1)",
       "foreign_aid": "Nhận viện trợ (+2)",
       "tax": "Thu thuế (+3)",
       "assassinate": "Ám sát (-3)",
       "steal": "Ăn cắp (+2)",
-      "exchange": "Tráo bài",
-      "coup": "Đảo chính (-7)"
+      "draw": "{{player}} đã rút 1 lá bài.",
+      "see_future": "{{player}} đã nhìn trước tương lai 🔮",
+      "favor": "{{player}} yêu cầu {{target}} ban ơn.",
+      "combo2": "{{player}} dùng combo 2 để lấy bài của {{target}}.",
+      "combo3_success": "{{player}} dùng combo 3 lấy được lá {{card}} từ {{target}}!",
+      "combo3_fail": "{{player}} dùng combo 3 nhưng {{target}} không có lá bài yêu cầu.",
+      "combo5": "{{player}} dùng combo 5 để lấy lá {{card}} từ tập bài bỏ.",
+      "exploded": "💥 {{player}} ĐÃ BỊ NỔ!",
+      "defused": "🛠️ {{player}} đã gỡ bom thành công và đặt lại vào bộ bài.",
+      "skip": "{{player}} đã bỏ qua lượt.",
+      "attack": "{{player}} đã tấn công lượt tiếp theo!",
+      "shuffle": "{{player}} đã tráo lại bộ bài.",
+      "nope": "{{player}} dùng lá NOPE! 🚫"
     },
-    "logs": {
+    "cards": {
+      "EXPLODING_KITTEN": "Mèo Nổ",
+      "DEFUSE": "Gỡ Bom",
+      "ATTACK": "Tấn Công",
+      "SKIP": "Bỏ Qua",
+      "FAVOR": "Ban Ơn",
+      "SHUFFLE": "Tráo Bài",
+      "SEE_THE_FUTURE": "Nhìn Trước Tương Lai",
+      "NOPE": "NOPE!",
+      "CAT_BEARD": "Mèo Râu Bạc",
+      "CAT_TACO": "Mèo Taco",
+      "CAT_RAINBOW": "Mèo Cầu Vồng",
+      "CAT_MELON": "Mèo Dưa Hấu"
+    },
+    "monopoly": {
       "started": "Trận đấu bắt đầu! {{player}} đi trước.",
       "income": "{{player}} lấy thu nhập (+1 vàng).",
       "coup": "{{player}} tung đòn Đảo chính hạ sát {{target}}!",
@@ -93,7 +151,8 @@
       "block_challenge_failed": "{{challenger}} nghi ngờ {{blocker}} chặn láo và đã SAI! {{challenger}} mất 1 quân bài.",
       "block_challenge_success": "{{challenger}} nghi ngờ {{blocker}} chặn láo và đã ĐÚNG! {{blocker}} mất 1 quân bài.",
       "turn_start": "--- Lượt của {{player}} ---",
-      "winner": "🏆 {{player}} là người sống sót cuối cùng!"
+      "winner": "🏆 {{player}} là người sống sót cuối cùng!",
+      "winner_simple": "đã chiến thắng!"
     },
     "kittens": {
       "logs": {

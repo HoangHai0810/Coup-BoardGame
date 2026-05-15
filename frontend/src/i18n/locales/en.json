@@ -38,7 +38,24 @@
     "maxPlayers": "Max Players",
     "aiBots": "Add AI Bots",
     "cancel": "Cancel",
-    "createBtn": "Create"
+    "createBtn": "Create",
+    "onlinePlayers": "Online Players",
+    "roomCreated": "Room created successfully!",
+    "errorLoadRooms": "Failed to load rooms",
+    "defaultRoomName": "{{username}}'s Room",
+    "errorCreateRoom": "Failed to create room",
+    "errorJoinRoom": "Could not join room",
+    "errorInvalidCode": "Invalid room code",
+    "quickPlayVsAI": "{{username}} vs AI ({{type}})",
+    "errorCreateGame": "Failed to create game",
+    "noRooms": "No active rooms — create the first one!",
+    "full": "Full",
+    "onlyYouOnline": "Only you are online",
+    "roomName": "Room Name"
+  },
+  "games": {
+    "kittens": "Exploding Kittens",
+    "monopoly": "Monopoly"
   },
   "room": {
     "title": "Waiting Room: {{code}}",
@@ -69,6 +86,15 @@
     "gameOver": "Game Over",
     "returnLobby": "Return to Lobby",
     "eliminated": "Eliminated 💀",
+    "replay": "Play Again",
+    "mustCoup": "Must Coup!",
+    "waitingOthers": "Waiting for others to respond...",
+    "autoSkipping": "Auto skipping...",
+    "challengeHint": "Challenge (Doubt)",
+    "blockedBy": "Blocked by {{player}}!",
+    "targetSelectHint": "🎯 Select target for {{action}} — click avatar above",
+    "cancel": "Cancel",
+    "gameStarted": "Game starting...",
     "actions": {
       "income": "Income (+1 coin)",
       "foreign_aid": "Foreign Aid (+2 coins)",
@@ -102,19 +128,38 @@
       "block_challenge_failed": "{{challenger}} challenged {{blocker}}'s block — and was WRONG! {{challenger}} loses 1 card.",
       "block_challenge_success": "{{challenger}} challenged {{blocker}}'s block — and was RIGHT! {{blocker}} loses 1 card.",
       "turn_start": "--- {{player}}'s turn ---",
-      "winner": "🏆 {{player}} wins the game!"
+      "winner": "🏆 {{player}} wins the game!",
+      "winner_simple": "has won!"
     },
     "kittens": {
       "logs": {
         "draw": "{{player}} drew a card.",
-        "skip": "{{player}} used Skip.",
-        "attack": "{{player}} used Attack! The next player must take 2 turns.",
+        "see_future": "{{player}} saw the future 🔮",
+        "favor": "{{player}} asked {{target}} for a favor.",
+        "combo2": "{{player}} used combo 2 to steal from {{target}}.",
+        "combo3_success": "{{player}} used combo 3 and got {{card}} from {{target}}!",
+        "combo3_fail": "{{player}} used combo 3 but {{target}} didn't have the card.",
+        "combo5": "{{player}} used combo 5 to pick {{card}} from discard pile.",
+        "exploded": "💥 {{player}} EXPLODED!",
+        "defused": "🛠️ {{player}} defused the bomb and put it back in the deck.",
+        "skip": "{{player}} skipped their turn.",
+        "attack": "{{player}} attacked the next turn!",
         "shuffle": "{{player}} shuffled the deck.",
-        "see_future": "{{player}} saw the future.",
-        "favor": "{{player}} asked for a favor from {{target}}.",
-        "favor_received": "{{player}} received a card from {{target}}.",
-        "exploding_defuse": "🙀 {{player}} drew an Exploding Kitten but successfully Defused it!",
-        "exploded": "💥 BOOM! {{player}} exploded and is out of the game."
+        "nope": "{{player}} used NOPE! 🚫"
+      },
+      "cards": {
+        "EXPLODING_KITTEN": "Exploding Kitten",
+        "DEFUSE": "Defuse",
+        "ATTACK": "Attack",
+        "SKIP": "Skip",
+        "FAVOR": "Favor",
+        "SHUFFLE": "Shuffle",
+        "SEE_THE_FUTURE": "See the Future",
+        "NOPE": "NOPE!",
+        "CAT_BEARD": "Beard Cat",
+        "CAT_TACO": "Taco Cat",
+        "CAT_RAINBOW": "Rainbow Cat",
+        "CAT_MELON": "Melon Cat"
       }
     },
     "uno": {

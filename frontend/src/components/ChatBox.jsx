@@ -52,12 +52,14 @@ export default function ChatBox({ roomId = 'global' }) {
                             {m.senderName}
                         </div>
                         <div style={{ 
-                            padding: '8px 12px', 
-                            borderRadius: 12, 
-                            background: m.senderId === user?.id ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-                            color: 'white',
-                            fontSize: '0.9rem',
-                            wordBreak: 'break-word'
+                            padding: '10px 14px', 
+                            borderRadius: 16, 
+                            background: m.senderId === user?.id ? 'var(--accent-primary)' : '#f0f4f8',
+                            color: m.senderId === user?.id ? 'white' : 'var(--text-primary)',
+                            fontSize: '0.95rem',
+                            wordBreak: 'break-word',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                            fontWeight: 500
                         }}>
                             {m.content}
                         </div>

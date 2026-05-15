@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
+import ChatBox from '../components/ChatBox';
+import toast from 'react-hot-toast';
 
-const UNO_ASSETS = '/assets/uno_assets_pack_1777970075772.png'; // Path to the generated image
+const UNO_ASSETS = '/assets/uno_assets_pack_1777970075772.png';
 const WILD_IMG = '/assets/uno_wild_card_premium_1778036505397.png';
 const DRAW4_IMG = '/assets/uno_wild_draw4_premium_1778036593265.png';
 const COLOR_MAP = { RED: '#e74c3c', BLUE: '#3498db', GREEN: '#2ecc71', YELLOW: '#f1c40f', WILD: '#2c3e50' };
@@ -20,7 +22,7 @@ export default function UnoPage() {
 
   const [gameState, setGameState] = useState(null);
   const [myHand, setMyHand] = useState([]);
-  const [choosingColorFor, setChoosingColorFor] = useState(null); // cardId
+  const [choosingColorFor, setChoosingColorFor] = useState(null);
   const logEndRef = useRef(null);
 
   useEffect(() => {
@@ -30,10 +32,7 @@ export default function UnoPage() {
     const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
       setMyHand(data.hand || []);
     });
-
-    // Request current game state
     send(`/app/game/${roomId}/connect`, {});
-
     return () => { unsub1(); unsub2(); };
   }, [roomId, user?.id, subscribe, send]);
 
@@ -41,7 +40,12 @@ export default function UnoPage() {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState?.actionLog]);
 
-  if (!gameState) return <div className="page-loading"><div className="spinner" /></div>;
+  if (!gameState) return (
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f0c29', gap: 20 }}>
+      <div className="spinner" />
+      <p style={{ color: 'white', fontWeight: 800 }}>Đang tải UNO...</p>
+    </div>
+  );
 
   const isMyTurn = gameState.currentPlayerId === user?.id;
 
@@ -65,144 +69,186 @@ export default function UnoPage() {
   };
 
   return (
-    <div className="page uno-page" style={{ overflow: 'hidden' }}>
-      <div className="uno-bg-overlay" />
+    <div className="page" style={{ 
+      height: '100vh', display: 'flex', flexDirection: 'column', 
+      background: 'linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d)',
+      overflow: 'hidden', position: 'relative'
+    }}>
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/assets/uno_bg.png")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.1, pointerEvents: 'none' }} />
       <Navbar />
 
-      <div className="uno-container">
-        {/* Opponents */}
-        <div className="opponents-row">
-          {gameState.players.filter(p => p.id !== user?.id).map(p => (
-            <div key={p.id} className={`player-card ${gameState.currentPlayerId === p.id ? 'active' : ''}`}>
-              <img src={p.avatarUrl} alt={p.username} />
-              <div className="info">
-                <div className="name">{p.username}</div>
-                <div className="count">🎴 {p.handCount}</div>
-              </div>
-            </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px 40px', gap: 20, position: 'relative', zIndex: 1, minHeight: 0 }}>
+        
+        {/* TOP: OPPONENTS */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, height: '140px', flexShrink: 0 }}>
+          {gameState.players.filter(p => p.id !== user?.id).map((p, i) => (
+            <motion.div key={p.id} 
+              initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className={`player-seat glass ${gameState.currentPlayerId === p.id ? 'active-turn' : ''}`}
+              style={{ 
+                width: 140, padding: 12, borderRadius: 24, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                border: gameState.currentPlayerId === p.id ? '4px solid white' : '2px solid rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
+                boxShadow: gameState.currentPlayerId === p.id ? '0 0 20px rgba(255,255,255,0.4)' : 'none'
+              }}
+            >
+              <img src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`} 
+                   alt={p.username} style={{ width: 48, height: 48, borderRadius: '50%', border: '3px solid white', marginBottom: 8 }} />
+              <div style={{ fontWeight: 900, fontSize: '0.9rem', color: 'white', textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.username}</div>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 800 }}>🎴 {p.handCount} lá bài</div>
+            </motion.div>
           ))}
         </div>
 
-        {/* Center Board */}
-        <div className="board-center">
-          <div className="deck-area">
-            <div className="pile draw-pile" onClick={handleDraw}>
-              <div className="uno-card-back" style={{ backgroundImage: `url(${UNO_ASSETS})`, backgroundSize: '200% 100%', backgroundPosition: '0% 0%' }}></div>
-            </div>
-            <div className="pile discard-pile" style={{ background: COLOR_MAP[gameState.activeColor] }}>
-              <div className="uno-card-front">
-                <span className="value">{gameState.activeValue}</span>
+        {/* MIDDLE: BOARD & SIDEBARS */}
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '300px 1fr 320px', gap: 32, minHeight: 0 }}>
+          
+          {/* LEFT: MY STATUS */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <motion.div className={`glass ${isMyTurn ? 'active-turn' : ''}`} 
+              style={{ 
+                padding: 24, borderRadius: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', 
+                background: 'rgba(255,255,255,0.15)', border: '3px solid white',
+                boxShadow: isMyTurn ? '0 0 30px rgba(255,255,255,0.3)' : 'var(--shadow-lg)'
+              }}>
+              <div style={{ position: 'relative' }}>
+                <img src={user?.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.username}`} 
+                     alt={user?.username} style={{ width: 80, height: 80, borderRadius: '50%', border: '4px solid white' }} />
+                <div style={{ position: 'absolute', bottom: -5, right: -5, background: '#f1c40f', color: 'black', padding: '4px 10px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 900, border: '2px solid white' }}>YOU</div>
+              </div>
+              <h2 style={{ color: 'white', marginTop: 12, fontSize: '1.2rem', fontWeight: 900 }}>{user?.username}</h2>
+              {isMyTurn && <div className="badge badge-gold" style={{ marginTop: 12, animation: 'pulse-border 2s infinite' }}>LƯỢT CỦA BẠN</div>}
+            </motion.div>
+            
+            {/* Action Log Mini */}
+            <div className="glass" style={{ flex: 1, borderRadius: 32, padding: 20, background: 'rgba(0,0,0,0.3)', color: 'white', display: 'flex', flexDirection: 'column', minHeight: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>📜 {t('game.actionLog')}</h4>
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
+                {gameState.actionLog?.slice(-15).map((log, i) => (
+                  <div key={i} style={{ 
+                    padding: '10px 14px', background: 'rgba(255,255,255,0.1)', borderRadius: 12, fontSize: '0.8rem', fontWeight: 700,
+                    borderLeft: '4px solid #f1c40f'
+                  }}>
+                    {typeof log === 'string' ? log : t(log.key, log.params)}
+                  </div>
+                ))}
+                <div ref={logEndRef} />
               </div>
             </div>
           </div>
-          
-          <div className="game-info">
-            <div className="current-color" style={{ color: COLOR_MAP[gameState.activeColor] }}>
-              ● {gameState.activeColor}
+
+          {/* CENTER: PLAY AREA */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+            <div style={{ display: 'flex', gap: 60, alignItems: 'center' }}>
+              {/* Draw Pile */}
+              <motion.div whileHover={{ scale: 1.05 }} className="pile" onClick={handleDraw}
+                style={{ 
+                  width: 130, height: 190, background: '#1a1a1a', border: '6px solid white', borderRadius: 20, cursor: isMyTurn ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'relative'
+                }}>
+                <div style={{ backgroundImage: `url(${UNO_ASSETS})`, width: '100%', height: '100%', backgroundSize: '200% 100%', backgroundPosition: '0% 0%', borderRadius: 14 }}></div>
+                {isMyTurn && <div style={{ position: 'absolute', top: -50, background: '#f1c40f', color: 'black', padding: '8px 24px', borderRadius: 12, fontWeight: 900, boxShadow: '0 5px 15px rgba(0,0,0,0.2)' }}>RÚT BÀI</div>}
+              </motion.div>
+
+              {/* Discard Pile */}
+              <div style={{ width: 130, height: 190, borderRadius: 20, border: '6px dashed rgba(255,255,255,0.3)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AnimatePresence mode='wait'>
+                  <motion.div key={`${gameState.activeValue}-${gameState.activeColor}`}
+                    initial={{ scale: 0.5, rotate: -30, opacity: 0 }} 
+                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                    style={{ 
+                      width: '100%', height: '100%', background: COLOR_MAP[gameState.activeColor], borderRadius: 20, border: '6px solid white',
+                      display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'absolute'
+                    }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4.5rem', fontWeight: 900, color: 'white', textShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+                      {gameState.activeValue}
+                    </div>
+                    <div style={{ background: 'white', textAlign: 'center', fontSize: '0.8rem', fontWeight: 900, padding: '6px 0', color: COLOR_MAP[gameState.activeColor], textTransform: 'uppercase' }}>
+                      {gameState.activeColor}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
-            <div className="direction">
-              {gameState.clockwise ? '↻ Clockwise' : '↺ Counter-Clockwise'}
+
+            <div style={{ color: 'white', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: 4, textTransform: 'uppercase', opacity: 0.8, background: 'rgba(0,0,0,0.2)', padding: '8px 32px', borderRadius: 20 }}>
+                {gameState.clockwise ? '↻ CLOCKWISE' : '↺ COUNTER-CLOCKWISE'}
+              </div>
             </div>
+          </div>
+
+          {/* RIGHT: CHAT & SPECIAL */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <ChatBox roomId={roomId} />
+            
+            <AnimatePresence>
+              {choosingColorFor && (
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}
+                  className="glass" style={{ padding: 24, borderRadius: 32, background: 'rgba(255,255,255,0.95)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+                  <h3 style={{ marginBottom: 20, textAlign: 'center', color: '#1a2a6c', fontWeight: 900 }}>Chọn màu mới:</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    {['RED', 'BLUE', 'GREEN', 'YELLOW'].map(c => (
+                      <motion.button key={c} whileHover={{ scale: 1.1 }} whileActive={{ scale: 0.9 }}
+                        onClick={() => selectColor(c)} 
+                        style={{ height: 60, background: COLOR_MAP[c], border: '4px solid white', borderRadius: 16, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }} />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* My Hand */}
-        <div className="my-hand-area">
-          <div className="hand-scroll">
-            {myHand.map((card) => (
-                <motion.div 
-                  key={card.id}
-                  whileHover={{ y: -30, scale: 1.1 }}
-                  className="uno-player-card"
-                  style={{ 
-                    cursor: 'pointer',
-                    width: 100, height: 150,
-                    background: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color]
-                  }}
-                  onClick={() => handlePlayCard(card)}
-                >
-                  <div className="card-art-container" style={{ background: card.color === 'WILD' ? 'transparent' : 'rgba(255,255,255,0.1)' }}>
-                    {card.color === 'WILD' ? (
-                      <div className="card-art" style={{
-                        backgroundImage: `url(${card.value === 'WILD_DRAW_4' ? DRAW4_IMG : WILD_IMG})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                      }} />
-                    ) : (
-                      <div style={{
-                        fontSize: '3rem', fontWeight: 900, color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%',
-                        textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-                      }}>
-                        {card.value}
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-label" style={{ background: 'white', textAlign: 'center', fontSize: '10px' }}>{card.color}</div>
-                </motion.div>
+        {/* BOTTOM: MY HAND */}
+        <div style={{ height: '240px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: 'rgba(0,0,0,0.15)', borderRadius: '40px 40px 0 0', margin: '0 -40px' }}>
+          <div style={{ 
+            display: 'flex', gap: -30, justifyContent: 'center', padding: '0 100px', width: '100%', overflowX: 'auto',
+            paddingBottom: 20, scrollbarWidth: 'none'
+          }}>
+            {myHand.map((card, i) => (
+              <motion.div key={card.id}
+                initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: i * 0.05 }}
+                whileHover={{ y: -50, scale: 1.15, zIndex: 100 }}
+                style={{ 
+                  flexShrink: 0, width: 120, height: 180, background: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color],
+                  borderRadius: 20, border: '4px solid white', cursor: 'pointer', margin: '0 -25px',
+                  display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 15px 30px rgba(0,0,0,0.4)',
+                  transition: 'margin 0.3s'
+                }}
+                onClick={() => handlePlayCard(card)}
+              >
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  {card.color === 'WILD' ? (
+                    <div style={{ width: '100%', height: '100%', backgroundImage: `url(${card.value === 'WILD_DRAW_4' ? DRAW4_IMG : WILD_IMG})`, backgroundSize: 'cover' }} />
+                  ) : (
+                    <div style={{ fontSize: '3.5rem', fontWeight: 900, color: 'white', textShadow: '3px 3px 6px rgba(0,0,0,0.3)' }}>{card.value}</div>
+                  )}
+                </div>
+                <div style={{ background: 'white', textAlign: 'center', fontSize: '0.75rem', fontWeight: 900, padding: '6px 0', color: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color], textTransform: 'uppercase' }}>
+                  {card.color}
+                </div>
+              </motion.div>
             ))}
           </div>
-          <div className={`turn-banner ${isMyTurn ? 'my-turn' : ''}`}>
-            {isMyTurn ? 'Tới lượt bạn!' : `Lượt của ${gameState.players.find(p => p.id === gameState.currentPlayerId)?.username}`}
-          </div>
-        </div>
-
-        {/* Action Log */}
-        <div className="log-panel">
-          {gameState.actionLog.slice(-5).map((log, i) => (
-            <div key={i} className="log-item">
-              {typeof log === 'string' ? log : t(log.key, log.params)}
-            </div>
-          ))}
         </div>
       </div>
 
-      {/* Color Selection Modal */}
-      <AnimatePresence>
-        {choosingColorFor && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="modal-overlay">
-            <div className="color-modal">
-              <h3>Chọn màu tiếp theo:</h3>
-              <div className="color-grid">
-                {['RED', 'YELLOW', 'GREEN', 'BLUE'].map(c => (
-                  <div key={c} className="color-option" style={{ background: COLOR_MAP[c] }} onClick={() => selectColor(c)} />
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Game Over */}
+      {/* Overlays */}
       <AnimatePresence>
         {gameState.phase === 'GAME_OVER' && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="game-over-overlay"
-            style={{ zIndex: 9999, position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)' }}
-          >
-            <motion.div 
-              initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} 
-              className="game-over-card"
-              style={{ pointerEvents: 'auto', background: 'white', padding: 40, borderRadius: 32, textAlign: 'center' }}
-            >
-              <h1 className="display-font" style={{ color: 'var(--text-primary)', fontSize: '2.5rem', marginBottom: 10 }}>
-                {t('game.gameOver')}
-              </h1>
-              <div className="winner-announcement" style={{ marginBottom: 32 }}>
-                <span style={{ fontSize: '1.2rem' }}>🏆</span>
-                <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>
-                  {gameState.players?.find(p => p.id === gameState.winnerId)?.username} đã chiến thắng!
-                </span>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-over-overlay" style={{ zIndex: 2000 }}>
+            <motion.div initial={{ scale: 0.8, y: 50 }} animate={{ scale: 1, y: 0 }} className="game-over-card glass" style={{ padding: 60, borderRadius: 60, background: 'rgba(255,255,255,0.98)', textAlign: 'center', boxShadow: '0 40px 100px rgba(0,0,0,0.5)' }}>
+              <div style={{ fontSize: '6rem', marginBottom: 20 }}>👑</div>
+              <h1 style={{ fontSize: '3.5rem', color: '#1a2a6c', fontWeight: 900, marginBottom: 12 }}>{t('game.gameOver')}</h1>
+              <div style={{ padding: '30px 60px', background: '#f1c40f', borderRadius: 32, margin: '32px 0', border: '6px solid white' }}>
+                <h2 style={{ fontSize: '2.2rem', margin: 0, fontWeight: 900 }}>{gameState.players?.find(p => p.id === gameState.winnerId)?.username} THẮNG!</h2>
               </div>
-
-              <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-                <button onClick={() => navigate(`/room/${roomId}`)} className="btn btn-primary" style={{ padding: '14px 28px', zIndex: 10000, cursor: 'pointer' }}>
-                  Chơi lại
-                </button>
-                <button onClick={() => navigate('/lobby')} className="btn btn-ghost" style={{ padding: '14px 28px', zIndex: 10000, cursor: 'pointer' }}>
-                  Về sảnh
-                </button>
+              <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
+                <button onClick={() => navigate(`/room/${roomId}`)} className="btn btn-primary" style={{ padding: '20px 50px', fontSize: '1.2rem' }}>CHƠI LẠI</button>
+                <button onClick={() => navigate('/lobby')} className="btn btn-ghost" style={{ padding: '20px 50px', fontSize: '1.2rem' }}>VỀ SẢNH</button>
               </div>
             </motion.div>
           </motion.div>
@@ -210,67 +256,14 @@ export default function UnoPage() {
       </AnimatePresence>
 
       <style jsx>{`
-        .uno-page {
-            background: #0f0c29;
-            position: relative;
+        .spinner {
+          width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;
         }
-        .uno-bg-overlay {
-            position: absolute;
-            inset: 0;
-            background-image: url('/assets/uno_bg.png');
-            background-size: cover;
-            background-position: center;
-            opacity: 0.25;
-            filter: blur(2px);
-            z-index: 0;
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-border {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.8; }
         }
-        .uno-container {
-          display: flex; flex-direction: column; height: calc(100vh - 70px);
-          padding: 20px; gap: 20px; position: relative;
-          z-index: 1;
-        }
-        .opponents-row { display: flex; justify-content: center; gap: 20px; }
-        .player-card {
-          background: white; padding: 10px 20px; border-radius: 16px; border: 3px solid #ddd;
-          display: flex; align-items: center; gap: 12px; transition: all 0.3s;
-        }
-        .player-card.active { border-color: #ff5722; transform: scale(1.05); box-shadow: 0 0 15px rgba(255,87,34,0.2); }
-        .player-card img { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #eee; }
-        .player-card .name { font-weight: 800; font-size: 0.9rem; }
-        
-        .board-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
-        .deck-area { display: flex; gap: 40px; }
-        .pile {
-          width: 120px; height: 180px; border-radius: 12px; border: 5px solid white;
-          box-shadow: 0 8px 16px rgba(0,0,0,0.1); cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .uno-card-back { background: #000; color: #ff3b30; font-weight: 900; font-size: 2rem; border-radius: 8px; padding: 10px; border: 4px solid white; }
-        .uno-card-front { color: white; font-weight: 900; font-size: 3rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-
-        .game-info { text-align: center; font-weight: 900; }
-        .current-color { font-size: 1.5rem; text-transform: uppercase; margin-bottom: 5px; }
-
-        .my-hand-area { background: white; border-radius: 32px 32px 0 0; padding: 30px; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); }
-        .hand-scroll { display: flex; gap: -20px; overflow-x: auto; padding: 40px 0; justify-content: center; }
-        .uno-card {
-          width: 100px; height: 150px; flex-shrink: 0; border-radius: 12px; border: 4px solid white;
-          display: flex; align-items: center; justify-content: center; color: white; cursor: pointer;
-          font-weight: 900; font-size: 2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-          margin-left: -20px; transition: all 0.2s;
-        }
-        .uno-card:first-child { margin-left: 0; }
-        .uno-card:hover { z-index: 10; margin-top: -20px; }
-
-        .turn-banner { text-align: center; font-weight: 900; color: #999; margin-top: 10px; }
-        .turn-banner.my-turn { color: #ff5722; font-size: 1.2rem; }
-
-        .log-panel { position: absolute; left: 20px; top: 100px; width: 220px; display: flex; flex-direction: column; gap: 8px; }
-        .log-item { background: white; padding: 10px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; border-left: 4px solid #ff5722; }
-
-        .color-modal { background: white; padding: 40px; border-radius: 32px; text-align: center; }
-        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        .color-option { width: 80px; height: 80px; border-radius: 50%; cursor: pointer; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
       `}</style>
     </div>
   );

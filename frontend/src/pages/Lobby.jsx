@@ -307,7 +307,7 @@ export default function Lobby() {
 
                 <div className="form-group">
                   <label>{t('lobby.gameSelection') || 'Chọn Trò Chơi'}</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 8 }}>
                     <div 
                       onClick={() => setCreateForm({ ...createForm, gameType: 'COUP' })}
                       className={`game-card-select ${createForm.gameType === 'COUP' ? 'active' : ''}`}
@@ -328,6 +328,13 @@ export default function Lobby() {
                     >
                       <span style={{ fontSize: '1.5rem' }}>🌈</span>
                       <span>Uno</span>
+                    </div>
+                    <div 
+                      onClick={() => setCreateForm({ ...createForm, gameType: 'MONOPOLY', maxPlayers: 4 })}
+                      className={`game-card-select ${createForm.gameType === 'MONOPOLY' ? 'active' : ''}`}
+                    >
+                      <span style={{ fontSize: '1.5rem' }}>🎩</span>
+                      <span>Cờ Tỉ Phú</span>
                     </div>
                   </div>
                 </div>

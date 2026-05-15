@@ -39,6 +39,8 @@ public class GameWebSocketController {
     private final KittensAIService kittensAIService;
     private final UnoGameService unoService;
     private final UnoAIService unoAIService;
+    private final com.boardgame.service.MonopolyService monopolyService;
+    private final com.boardgame.service.MonopolyAIService monopolyAIService;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messaging;
@@ -93,6 +95,15 @@ public class GameWebSocketController {
             room.setStatus(RoomEntity.RoomStatus.IN_GAME);
             roomRepository.save(room);
             broadcastUnoState(roomId, unoState);
+        } else if ("MONOPOLY".equalsIgnoreCase(room.getGameType())) {
+            List<com.boardgame.model.monopoly.MonopolyPlayer> monopolyPlayers = players.stream()
+                    .map(p -> new com.boardgame.model.monopoly.MonopolyPlayer(p.getId(), p.getUsername(), p.getAvatarUrl(), p.isAI()))
+                    .toList();
+            com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.startGame(roomId, monopolyPlayers);
+            room.setStatus(RoomEntity.RoomStatus.IN_GAME);
+            roomRepository.save(room);
+            broadcastMonopolyState(roomId, state);
+            scheduleMonopolyAITurnIfNeeded(roomId, state);
         } else {
             GameState state = coupGameService.startGame(roomId, players);
             room.setStatus(RoomEntity.RoomStatus.IN_GAME);
@@ -113,6 +124,9 @@ public class GameWebSocketController {
         } else if ("UNO".equalsIgnoreCase(room.getGameType())) {
             com.boardgame.model.uno.UnoGameState state = unoService.getGame(roomId);
             if (state != null) broadcastUnoState(roomId, state);
+        } else if ("MONOPOLY".equalsIgnoreCase(room.getGameType())) {
+            com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.getGame(roomId);
+            if (state != null) broadcastMonopolyState(roomId, state);
         } else {
             GameState state = coupGameService.getGame(roomId);
             if (state != null) broadcastState(roomId, state);
@@ -671,5 +685,81 @@ public class GameWebSocketController {
 
     private void sendError(String roomId, String userId, String message) {
         messaging.convertAndSendToUser(userId, "/queue/error", Map.of("error", message));
+    }
+
+    // ────────────────────────────────────────────────
+    // MONOPOLY ACTIONS
+    // ────────────────────────────────────────────────
+
+    @MessageMapping("/game/{roomId}/monopoly/roll")
+    public void rollDice(@DestinationVariable String roomId, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.rollDice(roomId, user.getId().toString());
+        if (state != null) {
+            broadcastMonopolyState(roomId, state);
+            scheduleMonopolyAITurnIfNeeded(roomId, state);
+        }
+    }
+
+    @MessageMapping("/game/{roomId}/monopoly/buy")
+    public void buyProperty(@DestinationVariable String roomId, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.buyProperty(roomId, user.getId().toString());
+        if (state != null) {
+            broadcastMonopolyState(roomId, state);
+            scheduleMonopolyAITurnIfNeeded(roomId, state);
+        }
+    }
+
+    @MessageMapping("/game/{roomId}/monopoly/end")
+    public void endMonopolyTurn(@DestinationVariable String roomId, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.endTurn(roomId, user.getId().toString());
+        if (state != null) {
+            broadcastMonopolyState(roomId, state);
+            scheduleMonopolyAITurnIfNeeded(roomId, state);
+        }
+    }
+
+    private void broadcastMonopolyState(String roomId, com.boardgame.model.monopoly.MonopolyGameState state) {
+        if (state == null) return;
+        messaging.convertAndSend("/topic/game/" + roomId, state);
+    }
+
+    private void scheduleMonopolyAITurnIfNeeded(String roomId, com.boardgame.model.monopoly.MonopolyGameState state) {
+        if (state == null) return;
+        com.boardgame.model.monopoly.MonopolyPlayer current = state.getPlayers().get(state.getCurrentTurnIndex());
+        if (current.isAI() && !current.isBankrupt()) {
+            scheduler.schedule(() -> processMonopolyAITurn(roomId), 1500, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void processMonopolyAITurn(String roomId) {
+        com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.getGame(roomId);
+        if (state == null) return;
+        com.boardgame.model.monopoly.MonopolyPlayer ai = state.getPlayers().get(state.getCurrentTurnIndex());
+        if (!ai.isAI() || ai.isBankrupt()) return;
+
+        com.boardgame.model.monopoly.MonopolyGameState nextState = null;
+        String phase = state.getPhase();
+
+        if ("ROLL".equals(phase)) {
+            nextState = monopolyService.rollDice(roomId, ai.getId());
+        } else if ("BUY".equals(phase)) {
+            com.boardgame.model.monopoly.Property p = state.getBoard().get(ai.getPosition());
+            if (p != null && monopolyAIService.decideToBuy(state, ai, p)) {
+                nextState = monopolyService.buyProperty(roomId, ai.getId());
+            } else {
+                // If AI doesn't buy, it just skips to end turn (MonopolyService.buyProperty also handles next phase, but we can call endTurn if phase is still BUY or ROLL)
+                nextState = monopolyService.endTurn(roomId, ai.getId());
+            }
+        } else if ("END_TURN".equals(phase)) {
+            nextState = monopolyService.endTurn(roomId, ai.getId());
+        }
+
+        if (nextState != null) {
+            broadcastMonopolyState(roomId, nextState);
+            scheduleMonopolyAITurnIfNeeded(roomId, nextState);
+        }
     }
 }

@@ -10,6 +10,7 @@ import RoomPage from './pages/RoomPage';
 import CoupGamePage from './pages/CoupGamePage';
 import ExplodingKittensPage from './pages/ExplodingKittensPage';
 import UnoPage from './pages/UnoPage';
+import MonopolyPage from './pages/MonopolyPage';
 import './index.css';
 
 function ProtectedRoute({ children }) {
@@ -37,6 +38,9 @@ function AppRoutes() {
       } />
       <Route path="/game/uno/:roomId" element={
         <ProtectedRoute><UnoPage /></ProtectedRoute>
+      } />
+      <Route path="/game/monopoly/:roomId" element={
+        <ProtectedRoute><MonopolyPage /></ProtectedRoute>
       } />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

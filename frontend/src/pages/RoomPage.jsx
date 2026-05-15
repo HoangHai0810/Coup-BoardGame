@@ -78,7 +78,7 @@ export default function RoomPage() {
         
         <div style={{ marginBottom: 32 }}>
           <div className="badge badge-gold" style={{ marginBottom: 10 }}>
-            {room?.gameType === 'KITTENS' ? '🙀 Mèo nổ' : room?.gameType === 'UNO' ? '🌈 Uno' : '🃏 Coup'}
+            {room?.gameType === 'KITTENS' ? '🙀 Mèo nổ' : room?.gameType === 'UNO' ? '🌈 Uno' : room?.gameType === 'MONOPOLY' ? '🎩 Cờ Tỉ Phú' : '🃏 Coup'}
           </div>
           <h1 style={{ fontSize: '2.5rem', color: 'var(--text-primary)' }}>{room?.name}</h1>
           <p style={{ color: 'var(--text-secondary)', fontWeight: 800 }}>Mã phòng: {roomId}</p>

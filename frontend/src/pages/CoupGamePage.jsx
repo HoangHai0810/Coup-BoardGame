@@ -21,11 +21,11 @@ const CARD_CLASS = {
 };
 
 export default function CoupGamePage() {
-  const { roomId } = useParams();
-  const { user } = useAuth();
-  const { send, subscribe } = useSocket();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { roomId }          = useParams();
+  const { user }            = useAuth();
+  const { subscribe, send, connected } = useSocket();
+  const navigate            = useNavigate();
+  const { t }               = useTranslation();
 
   const [gameState, setGameState] = useState(null);
   const [myCards, setMyCards] = useState([]);
@@ -45,11 +45,12 @@ export default function CoupGamePage() {
       setMyCards(data.cards);
     });
     
-    // Request current game state
-    send(`/app/game/${roomId}/connect`, {});
+    if (connected) {
+      send(`/app/game/${roomId}/connect`, {});
+    }
     
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe, send]);
+  }, [roomId, user?.id, subscribe, send, connected]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -77,11 +78,11 @@ export default function CoupGamePage() {
     }
   };
 
-  const handleChallenge = () => send(`/app/game/${roomId}/challenge`, {});
-  const handleAllow = () => send(`/app/game/${roomId}/allow`, {});
-  const handleBlock = (card) => send(`/app/game/${roomId}/block`, { card });
+  const handleChallenge  = () => send(`/app/game/${roomId}/challenge`, {});
+  const handleAllow      = () => send(`/app/game/${roomId}/allow`, {});
+  const handleBlock      = (card) => send(`/app/game/${roomId}/block`, { card });
   const handleChooseCard = (cardType) => send(`/app/game/${roomId}/choose-card`, { card: cardType });
-  const handleExchange = (keepCards) => send(`/app/game/${roomId}/exchange`, { keepCards });
+  const handleExchange   = (keepCards) => send(`/app/game/${roomId}/exchange`, { keepCards });
   
   const handleLeave = async () => {
     try {
@@ -381,7 +382,9 @@ function ResponsePanel({ pendingAction, players, userId, phase, onChallenge, onB
   const isActor = pendingAction.actorId === userId;
   const isBlocker = pendingAction.blockerId === userId;
 
-  if (isActor || (isBlockPhase && isBlocker)) {
+  // The actor must wait during action phase, but CAN respond during block phase.
+  // The blocker must wait during block phase.
+  if ((isActor && !isBlockPhase) || (isBlockPhase && isBlocker)) {
     return (
       <div style={{ height: '100%', display: 'flex', flexDir: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', borderRadius: 32, border: '4px dashed #ddd' }}>
         <div className="spinner" style={{ width: 32, height: 32, marginBottom: 16 }} />

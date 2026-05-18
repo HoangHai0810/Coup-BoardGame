@@ -68,7 +68,14 @@
     "actionPanel": "Your Turn! Choose an action",
     "responsePanel": "Someone made a move!",
     "coins": "Coins",
-    "cards": "Cards",
+    "cards": {
+      "title": "Characters List",
+      "DUKE": "Duke",
+      "ASSASSIN": "Assassin",
+      "CAPTAIN": "Captain",
+      "AMBASSADOR": "Ambassador",
+      "CONTESSA": "Contessa"
+    },
     "deck": "Deck",
     "actionLog": "Action History",
     "you": "YOU",

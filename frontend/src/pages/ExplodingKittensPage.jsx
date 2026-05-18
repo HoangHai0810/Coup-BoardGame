@@ -62,7 +62,7 @@ const CARD_COLORS = {
 export default function ExplodingKittensPage() {
   const { roomId } = useParams();
   const { user } = useAuth();
-  const { subscribe, send } = useSocket();
+  const { subscribe, send, connected } = useSocket();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -82,9 +82,11 @@ export default function ExplodingKittensPage() {
     const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
       setMyHand(data.hand || []);
     });
-    send(`/app/game/${roomId}/connect`, {});
+    if (connected) {
+      send(`/app/game/${roomId}/connect`, {});
+    }
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe, send]);
+  }, [roomId, user?.id, subscribe, send, connected]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -98,16 +100,16 @@ export default function ExplodingKittensPage() {
   );
 
   const isMyTurn = gameState.currentPlayerId === user?.id;
-  const me = gameState.players.find(p => p.id === user?.id);
-  const others = gameState.players.filter(p => p.id !== user?.id);
+  const me = gameState.players?.find(p => p.id === user?.id);
+  const others = gameState.players?.filter(p => p.id !== user?.id) || [];
 
   const handlePlayCard = (card, index) => {
     if (!isMyTurn) return;
-    if (selectedCards.includes(index)) {
+    if (selectedCards?.includes(index)) {
       setSelectedCards(selectedCards.filter(i => i !== index));
       return;
     }
-    if (selectedCards.length > 0) {
+    if (selectedCards?.length > 0) {
       setSelectedCards([...selectedCards, index]);
       return;
     }
@@ -120,7 +122,7 @@ export default function ExplodingKittensPage() {
   };
 
   const handleComboPlay = () => {
-    const cards = selectedCards.map(i => myHand[i]);
+    const cards = selectedCards?.map(i => myHand[i]) || [];
     if (cards.length === 2 && cards[0] === cards[1]) {
       setTargetAction({ card: 'COMBO2', type: 'COMBO2' });
     } else if (cards.length === 3 && cards[0] === cards[1] && cards[1] === cards[2]) {
@@ -140,7 +142,7 @@ export default function ExplodingKittensPage() {
 
   const handleTarget = (targetId) => {
     if (targetAction) {
-      const cards = selectedCards.length > 0 ? selectedCards.map(i => myHand[i]) : [targetAction.card];
+      const cards = selectedCards?.length > 0 ? selectedCards.map(i => myHand[i]) : [targetAction.card];
       send(`/app/game/${roomId}/kittens/play`, { 
         cardTypes: cards, 
         targetId,
@@ -239,7 +241,7 @@ export default function ExplodingKittensPage() {
                     <div className="card-art-container" style={{ background: 'rgba(0,0,0,0.1)' }}>
                       <div className="card-art" style={{
                         backgroundImage: `url(${KITTENS_IMAGES[gameState.discardTop] || ''})`,
-                        backgroundSize: gameState.discardTop.startsWith('CAT_') ? '400% 100%' : 'cover',
+                        backgroundSize: gameState.discardTop?.startsWith('CAT_') ? '400% 100%' : 'cover',
                         backgroundPosition: CAT_POSITIONS[gameState.discardTop] || 'center'
                       }} />
                     </div>
@@ -306,7 +308,7 @@ export default function ExplodingKittensPage() {
                     <div className="card-art-container">
                       <div className="card-art" style={{
                         backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
-                        backgroundSize: card.startsWith('CAT_') ? '400% 100%' : 'cover',
+                        backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
                         backgroundPosition: CAT_POSITIONS[card] || 'center'
                       }} />
                     </div>
@@ -327,7 +329,7 @@ export default function ExplodingKittensPage() {
                     <div className="card-art-container">
                       <div className="card-art" style={{
                         backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
-                        backgroundSize: card.startsWith('CAT_') ? '400% 100%' : 'cover',
+                        backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
                         backgroundPosition: CAT_POSITIONS[card] || 'center'
                       }} />
                     </div>
@@ -363,7 +365,7 @@ export default function ExplodingKittensPage() {
                   <div className="card-art-container">
                     <div className="card-art" style={{
                       backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
-                      backgroundSize: card.startsWith('CAT_') ? '400% 100%' : 'cover',
+                      backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
                       backgroundPosition: CAT_POSITIONS[card] || 'center'
                     }} />
                   </div>

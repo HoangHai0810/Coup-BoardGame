@@ -19,8 +19,8 @@ public class PendingAction {
     private CardType drawnCard2;
 
     public PendingAction(String actorId, ActionType actionType, String targetId) {
-        this.actorId = actorId;
+        this.actorId    = actorId;
         this.actionType = actionType;
-        this.targetId = targetId;
+        this.targetId   = targetId;
     }
 }

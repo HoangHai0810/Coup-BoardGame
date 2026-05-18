@@ -412,10 +412,14 @@ public class GameWebSocketController {
         PendingAction pending = state.getPendingAction();
         if (pending == null) return;
 
+        String excludedId = (state.getPhase() == GameState.Phase.AWAITING_BLOCK_RESPONSE)
+                ? pending.getBlockerId()
+                : pending.getActorId();
+
         // Each AI that hasn't responded yet
         for (Player ai : state.getActivePlayers()) {
             if (!ai.isAI()) continue;
-            if (ai.getId().equals(pending.getActorId())) continue;
+            if (ai.getId().equals(excludedId)) continue;
             if (state.getRespondedPlayerIds().contains(ai.getId())) continue;
 
             if (state.getPhase() == GameState.Phase.AWAITING_BLOCK_RESPONSE) {

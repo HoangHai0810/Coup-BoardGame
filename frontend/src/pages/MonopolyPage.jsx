@@ -15,11 +15,12 @@ export default function MonopolyPage() {
   const logEndRef = useRef(null);
 
   useEffect(() => {
-    if (!connected) return;
     const unsub = subscribe(`/topic/game/${roomId}`, state => {
       setGameState(state);
     });
-    send(`/app/game/${roomId}/connect`, {});
+    if (connected) {
+      send(`/app/game/${roomId}/connect`, {});
+    }
     return () => unsub();
   }, [roomId, subscribe, connected, send]);
 

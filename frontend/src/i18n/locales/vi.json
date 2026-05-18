@@ -59,7 +59,6 @@
     "actionPanel": "Lượt của bạn",
     "responsePanel": "Phản hồi hành động",
     "coins": "Vàng",
-    "cards": "Bài",
     "deck": "Xấp bài",
     "actionLog": "Nhật ký trận đấu",
     "you": "BẠN",
@@ -78,6 +77,7 @@
     "returnLobby": "Về sảnh chờ",
     "mustCoup": "Bắt buộc phải lật đổ! (>= 10 vàng)",
     "cards": {
+      "title": "Danh sách nhân vật",
       "DUKE": "Công tước",
       "ASSASSIN": "Sát thủ",
       "CAPTAIN": "Thuyền trưởng",
@@ -113,21 +113,7 @@
       "shuffle": "{{player}} đã tráo lại bộ bài.",
       "nope": "{{player}} dùng lá NOPE! 🚫"
     },
-    "cards": {
-      "EXPLODING_KITTEN": "Mèo Nổ",
-      "DEFUSE": "Gỡ Bom",
-      "ATTACK": "Tấn Công",
-      "SKIP": "Bỏ Qua",
-      "FAVOR": "Ban Ơn",
-      "SHUFFLE": "Tráo Bài",
-      "SEE_THE_FUTURE": "Nhìn Trước Tương Lai",
-      "NOPE": "NOPE!",
-      "CAT_BEARD": "Mèo Râu Bạc",
-      "CAT_TACO": "Mèo Taco",
-      "CAT_RAINBOW": "Mèo Cầu Vồng",
-      "CAT_MELON": "Mèo Dưa Hấu"
-    },
-    "monopoly": {
+    "logs": {
       "started": "Trận đấu bắt đầu! {{player}} đi trước.",
       "income": "{{player}} lấy thu nhập (+1 vàng).",
       "coup": "{{player}} tung đòn Đảo chính hạ sát {{target}}!",
@@ -169,6 +155,20 @@
         "combo3_success": "🧐 {{player}} dùng bộ 3 lá và đã cướp đúng lá {{card}} từ {{target}}!",
         "combo3_fail": "😅 {{player}} dùng bộ 3 lá để đòi {{card}} nhưng {{target}} không có!",
         "combo5": "♻️ {{player}} dùng bộ 5 lá khác loại để hồi lại lá {{card}} từ xấp bài bỏ!"
+      },
+      "cards": {
+        "EXPLODING_KITTEN": "Mèo Nổ",
+        "DEFUSE": "Gỡ Bom",
+        "ATTACK": "Tấn Công",
+        "SKIP": "Bỏ Qua",
+        "FAVOR": "Ban Ơn",
+        "SHUFFLE": "Tráo Bài",
+        "SEE_THE_FUTURE": "Nhìn Trước Tương Lai",
+        "NOPE": "NOPE!",
+        "CAT_BEARD": "Mèo Râu Bạc",
+        "CAT_TACO": "Mèo Taco",
+        "CAT_RAINBOW": "Mèo Cầu Vồng",
+        "CAT_MELON": "Mèo Dưa Hấu"
       }
     },
     "uno": {

@@ -16,7 +16,7 @@ const COLOR_MAP = { RED: '#e74c3c', BLUE: '#3498db', GREEN: '#2ecc71', YELLOW: '
 export default function UnoPage() {
   const { roomId } = useParams();
   const { user } = useAuth();
-  const { subscribe, send } = useSocket();
+  const { subscribe, send, connected } = useSocket();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -32,9 +32,11 @@ export default function UnoPage() {
     const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
       setMyHand(data.hand || []);
     });
-    send(`/app/game/${roomId}/connect`, {});
+    if (connected) {
+      send(`/app/game/${roomId}/connect`, {});
+    }
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe, send]);
+  }, [roomId, user?.id, subscribe, send, connected]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -152,24 +154,36 @@ export default function UnoPage() {
               </motion.div>
 
               {/* Discard Pile */}
-              <div style={{ width: 130, height: 190, borderRadius: 20, border: '6px dashed rgba(255,255,255,0.3)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <AnimatePresence mode='wait'>
-                  <motion.div key={`${gameState.activeValue}-${gameState.activeColor}`}
-                    initial={{ scale: 0.5, rotate: -30, opacity: 0 }} 
-                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                    style={{ 
-                      width: '100%', height: '100%', background: COLOR_MAP[gameState.activeColor], borderRadius: 20, border: '6px solid white',
-                      display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'absolute'
-                    }}>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4.5rem', fontWeight: 900, color: 'white', textShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
-                      {gameState.activeValue}
-                    </div>
-                    <div style={{ background: 'white', textAlign: 'center', fontSize: '0.8rem', fontWeight: 900, padding: '6px 0', color: COLOR_MAP[gameState.activeColor], textTransform: 'uppercase' }}>
-                      {gameState.activeColor}
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                style={{
+                  width: 130, height: 190,
+                  background: COLOR_MAP[gameState.activeColor] || '#2c3e50',
+                  border: '6px solid white', borderRadius: 20,
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                  position: 'relative', overflow: 'hidden'
+                }}
+              >
+                <div style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '2rem' : '4.5rem', 
+                  fontWeight: 900, color: 'white', textShadow: '4px 4px 0 rgba(0,0,0,0.2)' 
+                }}>
+                  {gameState.activeValue === 'SKIP' ? '⊘' : 
+                   gameState.activeValue === 'REVERSE' ? '⇄' : 
+                   gameState.activeValue === 'DRAW_2' ? '+2' : 
+                   gameState.activeValue}
+                </div>
+                <div style={{
+                  background: 'white', width: '100%', textAlign: 'center', fontSize: '0.8rem',
+                  fontWeight: 900, padding: '6px 0', color: COLOR_MAP[gameState.activeColor] || '#2c3e50',
+                  textTransform: 'uppercase'
+                }}>
+                  {gameState.activeColor}
+                </div>
+              </motion.div>
             </div>
 
             <div style={{ color: 'white', textAlign: 'center' }}>
@@ -224,7 +238,15 @@ export default function UnoPage() {
                   {card.color === 'WILD' ? (
                     <div style={{ width: '100%', height: '100%', backgroundImage: `url(${card.value === 'WILD_DRAW_4' ? DRAW4_IMG : WILD_IMG})`, backgroundSize: 'cover' }} />
                   ) : (
-                    <div style={{ fontSize: '3.5rem', fontWeight: 900, color: 'white', textShadow: '3px 3px 6px rgba(0,0,0,0.3)' }}>{card.value}</div>
+                    <div style={{ 
+                      fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '2.2rem' : '3.5rem', 
+                      fontWeight: 900, color: 'white', textShadow: '3px 3px 6px rgba(0,0,0,0.3)' 
+                    }}>
+                      {card.value === 'SKIP' ? '⊘' : 
+                       card.value === 'REVERSE' ? '⇄' : 
+                       card.value === 'DRAW_2' ? '+2' : 
+                       card.value}
+                    </div>
                   )}
                 </div>
                 <div style={{ background: 'white', textAlign: 'center', fontSize: '0.75rem', fontWeight: 900, padding: '6px 0', color: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color], textTransform: 'uppercase' }}>

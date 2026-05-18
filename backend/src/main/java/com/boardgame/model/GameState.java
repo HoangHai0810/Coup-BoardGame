@@ -29,9 +29,9 @@ public class GameState {
         private Map<String, Object> params;
     }
 
-    private Phase phase = Phase.WAITING;
-    private List<Player> players = new ArrayList<>();
-    private List<CardType> deck = new ArrayList<>();
+    private Phase phase            = Phase.WAITING;
+    private List<Player> players   = new ArrayList<>();
+    private List<CardType> deck    = new ArrayList<>();
     private int currentPlayerIndex = 0;
     private PendingAction pendingAction;
 
@@ -39,7 +39,7 @@ public class GameState {
     private String cardLossReason;
 
     private List<String> respondedPlayerIds = new ArrayList<>();
-    private List<LogEntry> actionLog = new ArrayList<>();
+    private List<LogEntry> actionLog        = new ArrayList<>();
 
     private String winnerId;
     private String roomId;

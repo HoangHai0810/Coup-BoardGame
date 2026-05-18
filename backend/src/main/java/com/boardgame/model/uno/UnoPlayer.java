@@ -14,9 +14,9 @@ public class UnoPlayer {
     private boolean saidUno = false;
 
     public UnoPlayer(String id, String username, String avatarUrl, boolean isAI) {
-        this.id = id;
-        this.username = username;
+        this.id        = id;
+        this.username  = username;
         this.avatarUrl = avatarUrl;
-        this.isAI = isAI;
+        this.isAI      = isAI;
     }
 }

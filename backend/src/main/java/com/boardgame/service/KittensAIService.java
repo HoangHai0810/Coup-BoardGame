@@ -9,11 +9,6 @@ import java.util.*;
 public class KittensAIService {
 
     public KittensCardType decideCardToPlay(KittensGameState state, KittensPlayer ai) {
-        // Simple AI logic: 
-        // 1. If has See the Future and doesn't know the top, use it.
-        // 2. If knows top card is Exploding Kitten, must use Skip or Attack or Shuffle.
-        // 3. Otherwise, 20% chance to play a random card (except Defuse and Nope).
-        // 4. Or just draw.
 
         List<KittensCardType> hand = ai.getHand();
         

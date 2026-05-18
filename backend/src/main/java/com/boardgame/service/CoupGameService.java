@@ -125,8 +125,12 @@ public class CoupGameService {
         }
 
         PendingAction pending = state.getPendingAction();
+        String excludedId = (state.getPhase() == GameState.Phase.AWAITING_BLOCK_RESPONSE)
+                ? pending.getBlockerId()
+                : pending.getActorId();
+
         List<Player> others = state.getActivePlayers().stream()
-                .filter(p -> !p.getId().equals(pending.getActorId()))
+                .filter(p -> !p.getId().equals(excludedId))
                 .toList();
 
         boolean allResponded = others.stream()

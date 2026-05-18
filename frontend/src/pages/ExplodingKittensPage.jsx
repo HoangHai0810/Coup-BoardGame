@@ -6,6 +6,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
+import ChatBox from '../components/ChatBox';
 
 const CARD_EMOJIS = {
   EXPLODING_KITTEN: '💣',

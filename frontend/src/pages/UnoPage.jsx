@@ -6,6 +6,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import ChatBox from '../components/ChatBox';
+import TurnTimer from '../components/TurnTimer';
 import toast from 'react-hot-toast';
 
 const UNO_ASSETS = '/assets/uno_assets_pack_1777970075772.png';
@@ -13,6 +14,14 @@ const WILD_IMG = '/assets/uno_wild_card_premium_1778036505397.png';
 const DRAW4_IMG = '/assets/uno_wild_draw4_premium_1778036593265.png';
 const COLOR_MAP = { RED: '#e74c3c', BLUE: '#3498db', GREEN: '#2ecc71', YELLOW: '#f1c40f', WILD: '#2c3e50' };
 
+const getUnoSymbol = (val) => {
+  if (val === 'SKIP') return '⊘';
+  if (val === 'REVERSE') return '⇄';
+  if (val === 'DRAW_2') return '+2';
+  if (val === 'WILD_DRAW_4') return '+4';
+  if (val === 'WILD') return '🌈';
+  return val;
+};
 export default function UnoPage() {
   const { roomId } = useParams();
   const { user } = useAuth();
@@ -45,7 +54,7 @@ export default function UnoPage() {
   if (!gameState) return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f0c29', gap: 20 }}>
       <div className="spinner" />
-      <p style={{ color: 'white', fontWeight: 800 }}>Đang tải UNO...</p>
+      <p style={{ color: 'white', fontWeight: 800 }}>{t('game.loadingUno', 'Đang tải UNO...')}</p>
     </div>
   );
 
@@ -104,7 +113,7 @@ export default function UnoPage() {
         </div>
 
         {/* MIDDLE: BOARD & SIDEBARS */}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '300px 1fr 320px', gap: 32, minHeight: 0 }}>
+        <div className="game-grid-layout">
           
           {/* LEFT: MY STATUS */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -142,6 +151,13 @@ export default function UnoPage() {
 
           {/* CENTER: PLAY AREA */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+            <TurnTimer 
+              currentPlayerId={gameState.currentPlayerId} 
+              currentPlayerName={gameState.players.find(p => p.id === gameState.currentPlayerId)?.username || ''}
+              currentUserId={user?.id}
+              isActive={gameState.phase !== 'GAME_OVER'}
+            />
+            
             <div style={{ display: 'flex', gap: 60, alignItems: 'center' }}>
               {/* Draw Pile */}
               <motion.div whileHover={{ scale: 1.05 }} className="pile" onClick={handleDraw}
@@ -158,7 +174,7 @@ export default function UnoPage() {
                 whileHover={{ scale: 1.05 }}
                 style={{
                   width: 130, height: 190,
-                  background: COLOR_MAP[gameState.activeColor] || '#2c3e50',
+                  background: 'white',
                   border: '6px solid white', borderRadius: 20,
                   display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center',
@@ -166,23 +182,32 @@ export default function UnoPage() {
                   position: 'relative', overflow: 'hidden'
                 }}
               >
-                <div style={{
-                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                  fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '2rem' : '4.5rem', 
-                  fontWeight: 900, color: 'white', textShadow: '4px 4px 0 rgba(0,0,0,0.2)' 
-                }}>
-                  {gameState.activeValue === 'SKIP' ? '⊘' : 
-                   gameState.activeValue === 'REVERSE' ? '⇄' : 
-                   gameState.activeValue === 'DRAW_2' ? '+2' : 
-                   gameState.activeValue}
+                <div style={{ position: 'absolute', inset: 0, background: COLOR_MAP[gameState.activeColor] || '#2c3e50' }}>
+                  {gameState.activeColor !== 'WILD' && (
+                    <div style={{ position: 'absolute', top: '-10%', left: '-20%', width: '140%', height: '120%', background: COLOR_MAP[gameState.activeColor], borderRadius: '50%', transform: 'rotate(-25deg)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }} />
+                  )}
                 </div>
-                <div style={{
-                  background: 'white', width: '100%', textAlign: 'center', fontSize: '0.8rem',
-                  fontWeight: 900, padding: '6px 0', color: COLOR_MAP[gameState.activeColor] || '#2c3e50',
-                  textTransform: 'uppercase'
-                }}>
-                  {gameState.activeColor}
-                </div>
+
+                {['WILD', 'WILD_DRAW_4'].includes(gameState.activeValue) ? (
+                  <>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${gameState.activeValue === 'WILD_DRAW_4' ? DRAW4_IMG : WILD_IMG})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                    {gameState.activeColor !== 'WILD' && (
+                      <div style={{ position: 'absolute', inset: 0, border: `8px solid ${COLOR_MAP[gameState.activeColor]}`, borderRadius: 14, boxShadow: `inset 0 0 20px ${COLOR_MAP[gameState.activeColor]}` }} />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{ position: 'absolute', top: 8, left: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '1.4rem' : '1.8rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1 }}>
+                      {getUnoSymbol(gameState.activeValue)}
+                    </div>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '4.5rem' : '5.5rem', fontWeight: 900, textShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+                      {getUnoSymbol(gameState.activeValue)}
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 8, right: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '1.4rem' : '1.8rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1, transform: 'rotate(180deg)' }}>
+                      {getUnoSymbol(gameState.activeValue)}
+                    </div>
+                  </>
+                )}
               </motion.div>
             </div>
 
@@ -227,31 +252,34 @@ export default function UnoPage() {
                 transition={{ delay: i * 0.05 }}
                 whileHover={{ y: -50, scale: 1.15, zIndex: 100 }}
                 style={{ 
-                  flexShrink: 0, width: 120, height: 180, background: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color],
-                  borderRadius: 20, border: '4px solid white', cursor: 'pointer', margin: '0 -25px',
+                  flexShrink: 0, width: 120, height: 180, background: 'white',
+                  borderRadius: 20, border: '6px solid white', cursor: 'pointer', margin: '0 -25px',
                   display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 15px 30px rgba(0,0,0,0.4)',
-                  transition: 'margin 0.3s'
+                  transition: 'margin 0.3s', position: 'relative'
                 }}
                 onClick={() => handlePlayCard(card)}
               >
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                  {card.color === 'WILD' ? (
-                    <div style={{ width: '100%', height: '100%', backgroundImage: `url(${card.value === 'WILD_DRAW_4' ? DRAW4_IMG : WILD_IMG})`, backgroundSize: 'cover' }} />
-                  ) : (
-                    <div style={{ 
-                      fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '2.2rem' : '3.5rem', 
-                      fontWeight: 900, color: 'white', textShadow: '3px 3px 6px rgba(0,0,0,0.3)' 
-                    }}>
-                      {card.value === 'SKIP' ? '⊘' : 
-                       card.value === 'REVERSE' ? '⇄' : 
-                       card.value === 'DRAW_2' ? '+2' : 
-                       card.value}
-                    </div>
+                <div style={{ position: 'absolute', inset: 0, background: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color] }}>
+                  {card.color !== 'WILD' && (
+                    <div style={{ position: 'absolute', top: '-10%', left: '-20%', width: '140%', height: '120%', background: COLOR_MAP[card.color], borderRadius: '50%', transform: 'rotate(-25deg)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }} />
                   )}
                 </div>
-                <div style={{ background: 'white', textAlign: 'center', fontSize: '0.75rem', fontWeight: 900, padding: '6px 0', color: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color], textTransform: 'uppercase' }}>
-                  {card.color}
-                </div>
+
+                {card.color === 'WILD' ? (
+                  <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${card.value === 'WILD_DRAW_4' ? DRAW4_IMG : WILD_IMG})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                ) : (
+                  <>
+                    <div style={{ position: 'absolute', top: 8, left: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '1.2rem' : '1.5rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1 }}>
+                      {getUnoSymbol(card.value)}
+                    </div>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '3.5rem' : '4.5rem', fontWeight: 900, textShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+                      {getUnoSymbol(card.value)}
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 8, right: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '1.2rem' : '1.5rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1, transform: 'rotate(180deg)' }}>
+                      {getUnoSymbol(card.value)}
+                    </div>
+                  </>
+                )}
               </motion.div>
             ))}
           </div>

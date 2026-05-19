@@ -20,13 +20,13 @@ export default function LanguageSwitcher() {
         className={`lang-btn ${i18n.language === 'vi' ? 'active' : ''}`}
         onClick={() => changeLanguage('vi')}
       >
-        🇻🇳 VN
+        🇻🇳 <span className="lang-text">VN</span>
       </button>
       <button 
         className={`lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
         onClick={() => changeLanguage('en')}
       >
-        🇬🇧 EN
+        🇬🇧 <span className="lang-text">EN</span>
       </button>
     </motion.div>
   );

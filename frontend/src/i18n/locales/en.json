@@ -65,6 +65,7 @@
     "leave": "Leave Room"
   },
   "game": {
+    "yourTurn": "Your Turn",
     "actionPanel": "Your Turn! Choose an action",
     "responsePanel": "Someone made a move!",
     "coins": "Coins",
@@ -103,13 +104,13 @@
     "cancel": "Cancel",
     "gameStarted": "Game starting...",
     "actions": {
-      "income": "Income (+1 coin)",
-      "foreign_aid": "Foreign Aid (+2 coins)",
-      "tax": "Tax (+3 coins)",
-      "assassinate": "Assassinate (-3 coins)",
-      "steal": "Steal (+2 coins)",
-      "exchange": "Exchange cards",
-      "coup": "Coup (-7 coins)"
+      "income": "Income 💰",
+      "foreign_aid": "Foreign Aid 🏛",
+      "tax": "Tax 👑",
+      "assassinate": "Assassinate 🗡",
+      "steal": "Steal ⚓",
+      "exchange": "Exchange 🤝",
+      "coup": "Coup 💥"
     },
     "logs": {
       "started": "Game started! {{player}}'s turn.",
@@ -139,6 +140,7 @@
       "winner_simple": "has won!"
     },
     "kittens": {
+      "cardsTitle": "cards",
       "logs": {
         "draw": "{{player}} drew a card.",
         "see_future": "{{player}} saw the future 🔮",

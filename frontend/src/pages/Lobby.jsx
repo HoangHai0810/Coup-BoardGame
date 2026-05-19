@@ -90,7 +90,7 @@ export default function Lobby() {
     setShowQuickSelect(false);
     try {
       const res = await api.post('/rooms', {
-        name: t('lobby.quickPlayVsAI', { type }),
+        name: t('lobby.quickPlayVsAI', { username: user?.username || '', type }),
         maxPlayers: type === 'UNO' ? 6 : 4,
         aiCount: type === 'UNO' ? 5 : 3,
         gameType: type
@@ -166,7 +166,7 @@ export default function Lobby() {
           </form>
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: 40, alignItems: 'start' }}>
+        <div className="lobby-layout">
           <div className="main-content">
             {/* Room list */}
             <h2 className="display-font" style={{ fontSize: '1.8rem', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>

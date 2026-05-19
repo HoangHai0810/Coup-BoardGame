@@ -84,7 +84,7 @@ export default function RoomPage() {
           <p style={{ color: 'var(--text-secondary)', fontWeight: 800 }}>Mã phòng: {roomId}</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32, alignItems: 'start' }}>
+        <div className="room-layout">
           <div className="main-content">
             <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>👥 Người chơi trong phòng</h2>
             

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import ChatBox from '../components/ChatBox';
+import TurnTimer from '../components/TurnTimer';
 
 const CARD_EMOJIS = {
   EXPLODING_KITTEN: '💣',
@@ -96,7 +97,7 @@ export default function ExplodingKittensPage() {
   if (!gameState) return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
       <div className="spinner" />
-      <p style={{ fontWeight: 800, color: 'var(--text-secondary)' }}>Đang tải mèo nổ...</p>
+      <p style={{ fontWeight: 800, color: 'var(--text-secondary)' }}>{t('game.loadingKittens', 'Đang tải mèo nổ...')}</p>
     </div>
   );
 
@@ -175,7 +176,7 @@ export default function ExplodingKittensPage() {
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/assets/kittens_bg.png")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.15, pointerEvents: 'none' }} />
       <Navbar />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', gap: 24, position: 'relative', zIndex: 1 }}>
+      <div className="game-board-container">
         
         {/* Opponents Row */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
@@ -196,7 +197,7 @@ export default function ExplodingKittensPage() {
               </div>
               <div style={{ textAlign: 'center', marginTop: 8 }}>
                 <div style={{ fontWeight: 900, fontSize: '1rem' }}>{p.username}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 800 }}>🎴 {p.handCount} {t('game.cards.title')}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 800 }}>🎴 {p.handCount} {t('game.kittens.cardsTitle')}</div>
               </div>
               {p.exploded && <span className="badge badge-red" style={{ marginTop: 8 }}>ELIMINATED</span>}
             </motion.div>
@@ -204,7 +205,13 @@ export default function ExplodingKittensPage() {
         </div>
 
         {/* Board Center */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <div className="game-board-center">
+          <TurnTimer 
+            currentPlayerId={gameState.currentPlayerId} 
+            currentPlayerName={gameState.players.find(p => p.id === gameState.currentPlayerId)?.username || ''}
+            currentUserId={user?.id}
+            isActive={gameState.phase !== 'GAME_OVER'}
+          />
           
           <div style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
             {/* Draw Pile */}
@@ -253,7 +260,7 @@ export default function ExplodingKittensPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 320 }}>
+          <div className="kittens-sidebar">
             {/* Action Log Floating */}
             <div className="card" style={{ 
               maxHeight: 350, background: 'rgba(255,255,255,0.95)', 
@@ -263,7 +270,10 @@ export default function ExplodingKittensPage() {
               <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>📜 {t('game.actionLog')}</h4>
               <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {gameState.actionLog.slice(-15).map((log, i) => {
-                  const text = typeof log === 'string' ? log : t(`game.kittens.logs.${log.key.replace('kittens.logs.', '')}`, {
+                  const translationKey = log.key.startsWith('game.logs.')
+                    ? log.key
+                    : `game.kittens.logs.${log.key.replace('kittens.logs.', '')}`;
+                  const text = typeof log === 'string' ? log : t(translationKey, {
                     ...log.params,
                     card: log.params?.card ? t(`game.kittens.cards.${log.params.card}`) : ''
                   });
@@ -343,11 +353,7 @@ export default function ExplodingKittensPage() {
         </AnimatePresence>
 
         {/* My Hand Area */}
-        <div style={{ 
-          background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', 
-          borderRadius: 40, padding: '24px 40px', border: '1px solid rgba(255,255,255,0.2)',
-          display: 'flex', alignItems: 'center', gap: 32
-        }}>
+        <div className="game-hand-area">
           <div style={{ flex: 1, display: 'flex', gap: 12, overflowX: 'auto', padding: '20px 0', minHeight: 180 }}>
             <AnimatePresence>
               {myHand.map((card, idx) => (
@@ -379,7 +385,7 @@ export default function ExplodingKittensPage() {
             </AnimatePresence>
           </div>
 
-          <div style={{ width: 300, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+          <div className="game-control-panel">
             <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`} style={{ fontSize: '1.2rem', padding: '12px 24px', width: '100%' }}>
               {isMyTurn ? t('game.yourTurn') : `Đợi ${gameState.players.find(p => p.id === gameState.currentPlayerId)?.username}...`}
             </div>

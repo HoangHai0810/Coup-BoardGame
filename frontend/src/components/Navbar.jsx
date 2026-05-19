@@ -23,15 +23,15 @@ export default function Navbar() {
           {user ? (
             <>
               <Link to="/lobby" className="btn btn-ghost" style={{ padding: '8px 16px' }}>
-                🎮 Lobby
+                🎮 <span className="navbar-btn-text">Lobby</span>
               </Link>
               <div className="navbar-user">
                 <img src={user.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}`}
                      alt={user.username} className="avatar-sm" />
-                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user.username}</span>
+                <span className="navbar-username" style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user.username}</span>
               </div>
               <button onClick={handleLogout} className="btn btn-ghost" style={{ padding: '8px 14px' }}>
-                {t('nav.logout')}
+                🚪 <span className="navbar-btn-text">{t('nav.logout')}</span>
               </button>
             </>
           ) : (

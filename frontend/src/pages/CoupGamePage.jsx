@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import ChatBox from '../components/ChatBox';
+import TurnTimer from '../components/TurnTimer';
 
 const CARD_IMAGES = {
   DUKE: '/assets/coup_duke_card_1777970293754.png',
@@ -95,7 +96,7 @@ export default function CoupGamePage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 16 }}>
         <div className="spinner" />
-        <p style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Đang tải game...</p>
+        <p style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{t('game.loadingGame', 'Đang tải game...')}</p>
       </div>
     );
   }
@@ -184,10 +185,7 @@ export default function CoupGamePage() {
         </div>
 
         {/* MIDDLE: ACTION AREA & SIDEBARS */}
-        <div style={{ 
-          flex: 1, display: 'grid', gridTemplateColumns: '320px 1fr 320px', 
-          gap: 32, minHeight: 0 
-        }}>
+        <div className="game-grid-layout">
           
           {/* LEFT: MY STATUS */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
@@ -234,6 +232,12 @@ export default function CoupGamePage() {
 
           {/* CENTER: GAMEPLAY BOARD */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
+            <TurnTimer 
+              currentPlayerId={gameState.currentPlayerId} 
+              currentPlayerName={gameState.players?.find(p => p.id === gameState.currentPlayerId)?.username || ''}
+              currentUserId={user?.id}
+              isActive={gameState.phase !== 'GAME_OVER'}
+            />
             
             {/* Status Indicator */}
             <div style={{ height: '100px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -313,9 +317,7 @@ export default function CoupGamePage() {
                   <div ref={logEndRef} />
                 </div>
               </div>
-              <div style={{ height: '300px' }}>
-                <ChatBox roomId={roomId} />
-              </div>
+              <ChatBox roomId={roomId} />
           </div>
 
         </div>
@@ -349,13 +351,13 @@ function ActionPanel({ me, onAction, t }) {
   const coins = me?.coins ?? 0;
   const mustCoup = coins >= 10;
   const actions = [
-    { key: 'INCOME', label: '💰 Income', cls: 'income', disabled: mustCoup },
-    { key: 'FOREIGN_AID', label: '🏛 Aid', cls: '', disabled: mustCoup },
-    { key: 'TAX', label: '👑 Tax', cls: 'tax', disabled: mustCoup },
-    { key: 'STEAL', label: '⚓ Steal', cls: 'steal', disabled: mustCoup },
-    { key: 'ASSASSINATE', label: '🗡 Assassinate', cls: 'assassinate', disabled: mustCoup || coins < 3 },
-    { key: 'EXCHANGE', label: '🤝 Exchange', cls: '', disabled: mustCoup },
-    { key: 'COUP', label: '💥 Coup', cls: 'coup-action', disabled: coins < 7 },
+    { key: 'INCOME', label: t('game.actions.income'), cls: 'income', disabled: mustCoup },
+    { key: 'FOREIGN_AID', label: t('game.actions.foreign_aid'), cls: '', disabled: mustCoup },
+    { key: 'TAX', label: t('game.actions.tax'), cls: 'tax', disabled: mustCoup },
+    { key: 'STEAL', label: t('game.actions.steal'), cls: 'steal', disabled: mustCoup },
+    { key: 'ASSASSINATE', label: t('game.actions.assassinate'), cls: 'assassinate', disabled: mustCoup || coins < 3 },
+    { key: 'EXCHANGE', label: t('game.actions.exchange'), cls: '', disabled: mustCoup },
+    { key: 'COUP', label: t('game.actions.coup'), cls: 'coup-action', disabled: coins < 7 },
   ];
 
   return (

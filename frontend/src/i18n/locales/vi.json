@@ -56,6 +56,7 @@
     "leave": "Rời phòng"
   },
   "game": {
+    "yourTurn": "Lượt của bạn",
     "actionPanel": "Lượt của bạn",
     "responsePanel": "Phản hồi hành động",
     "coins": "Vàng",
@@ -80,9 +81,9 @@
       "title": "Danh sách nhân vật",
       "DUKE": "Công tước",
       "ASSASSIN": "Sát thủ",
-      "CAPTAIN": "Thuyền trưởng",
-      "AMBASSADOR": "Sứ giả",
-      "CONTESSA": "Nữ tước"
+      "CAPTAIN": "Đại úy",
+      "AMBASSADOR": "Đại sứ",
+      "CONTESSA": "Bá tước"
     },
     "eliminated": "Đã bị loại 💀",
     "replay": "Chơi lại",
@@ -94,11 +95,13 @@
     "cancel": "Hủy",
     "gameStarted": "Trận đấu bắt đầu...",
     "actions": {
-      "income": "Lấy thu nhập (+1)",
-      "foreign_aid": "Nhận viện trợ (+2)",
-      "tax": "Thu thuế (+3)",
-      "assassinate": "Ám sát (-3)",
-      "steal": "Ăn cắp (+2)",
+      "income": "Thu nhập 💰",
+      "foreign_aid": "Viện trợ 🏛",
+      "tax": "Thu thuế 👑",
+      "assassinate": "Ám sát 🗡",
+      "steal": "Cướp bóc ⚓",
+      "exchange": "Tráo bài 🤝",
+      "coup": "Đảo chính 💥",
       "draw": "{{player}} đã rút 1 lá bài.",
       "see_future": "{{player}} đã nhìn trước tương lai 🔮",
       "favor": "{{player}} yêu cầu {{target}} ban ơn.",
@@ -141,6 +144,7 @@
       "winner_simple": "đã chiến thắng!"
     },
     "kittens": {
+      "cardsTitle": "lá bài",
       "logs": {
         "draw": "{{player}} đã rút bài.",
         "skip": "{{player}} dùng Bỏ lượt.",

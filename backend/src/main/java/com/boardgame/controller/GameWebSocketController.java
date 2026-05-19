@@ -45,6 +45,7 @@ public class GameWebSocketController {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messaging;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final Map<String, java.util.concurrent.ScheduledFuture<?>> turnTimers = new java.util.concurrent.ConcurrentHashMap<>();
 
     // DTO records for messages
     public record ActionMsg(String action, String targetId) {}
@@ -502,6 +503,8 @@ public class GameWebSocketController {
     // ────────────────────────────────────────────────
 
     private void broadcastState(String roomId, GameState state) {
+        cancelTimer(roomId);
+        
         Map<String, Object> publicState = buildPublicState(state);
         messaging.convertAndSend("/topic/game/" + roomId, (Object) publicState);
 
@@ -511,6 +514,10 @@ public class GameWebSocketController {
                 Map<String, Object> privateInfo = buildPrivateInfo(p);
                 messaging.convertAndSend("/topic/game/" + roomId + "/private/" + p.getId(), (Object) privateInfo);
             }
+        }
+
+        if (state.getPhase() != GameState.Phase.GAME_OVER && state.getCurrentPlayer() != null && !state.getCurrentPlayer().isAI()) {
+            scheduleTimer(roomId, "COUP", state.getCurrentPlayer().getId());
         }
 
         // On game over, mark room finished
@@ -579,6 +586,8 @@ public class GameWebSocketController {
     }
 
     private void broadcastKittensState(String roomId, KittensGameState state) {
+        cancelTimer(roomId);
+        
         Map<String, Object> publicState = buildKittensPublicState(state);
         messaging.convertAndSend("/topic/game/" + roomId, (Object) publicState);
 
@@ -593,6 +602,10 @@ public class GameWebSocketController {
         }
 
         scheduleKittensAITurnIfNeeded(roomId, state);
+
+        if (state.getPhase() != KittensGameState.Phase.GAME_OVER && state.getCurrentPlayer() != null && !state.getCurrentPlayer().isAI()) {
+            scheduleTimer(roomId, "KITTENS", state.getCurrentPlayer().getId());
+        }
 
         if (state.getPhase() == KittensGameState.Phase.GAME_OVER) {
             roomRepository.findById(roomId).ifPresent(room -> {
@@ -636,6 +649,8 @@ public class GameWebSocketController {
     }
 
     private void broadcastUnoState(String roomId, UnoGameState state) {
+        cancelTimer(roomId);
+        
         Map<String, Object> publicState = buildUnoPublicState(state);
         messaging.convertAndSend("/topic/game/" + roomId, (Object) publicState);
 
@@ -650,6 +665,10 @@ public class GameWebSocketController {
         }
 
         scheduleUnoAITurnIfNeeded(roomId, state);
+
+        if (state.getPhase() != UnoGameState.Phase.GAME_OVER && state.getCurrentPlayer() != null && !state.getCurrentPlayer().isAI()) {
+            scheduleTimer(roomId, "UNO", state.getCurrentPlayer().getId());
+        }
 
         if (state.getPhase() == UnoGameState.Phase.GAME_OVER) {
             roomRepository.findById(roomId).ifPresent(room -> {
@@ -764,6 +783,72 @@ public class GameWebSocketController {
         if (nextState != null) {
             broadcastMonopolyState(roomId, nextState);
             scheduleMonopolyAITurnIfNeeded(roomId, nextState);
+        }
+    }
+
+    private void cancelTimer(String roomId) {
+        java.util.concurrent.ScheduledFuture<?> timer = turnTimers.remove(roomId);
+        if (timer != null) {
+            timer.cancel(false);
+        }
+    }
+
+    private void scheduleTimer(String roomId, String gameType, String currentPlayerId) {
+        java.util.concurrent.ScheduledFuture<?> timer = scheduler.schedule(() -> {
+            try {
+                handleTurnTimeout(roomId, gameType, currentPlayerId);
+            } catch (Exception e) {
+                log.error("Error executing turn timeout for room " + roomId, e);
+            }
+        }, 30, TimeUnit.SECONDS);
+        turnTimers.put(roomId, timer);
+    }
+
+    private void handleTurnTimeout(String roomId, String gameType, String currentPlayerId) {
+        log.info("Turn timeout (30s) triggered for room {}, gameType {}, player {}", roomId, gameType, currentPlayerId);
+        if ("KITTENS".equalsIgnoreCase(gameType)) {
+            KittensGameState state = kittensService.getGame(roomId);
+            if (state != null && state.getCurrentPlayer() != null && state.getCurrentPlayer().getId().equals(currentPlayerId)) {
+                if (state.getPhase() == KittensGameState.Phase.PLAYER_TURN) {
+                    log.info("Timeout: auto-drawing card for player {} in room {}", currentPlayerId, roomId);
+                    KittensGameState newState = kittensService.drawCard(roomId, currentPlayerId);
+                    broadcastKittensState(roomId, newState);
+                } else if (state.getPhase() == KittensGameState.Phase.EXPLODING) {
+                    if (state.getCurrentPlayer().hasCard(KittensCardType.DEFUSE)) {
+                        log.info("Timeout: auto-defusing card for player {} in room {}", currentPlayerId, roomId);
+                        KittensGameState newState = kittensService.defuse(roomId, currentPlayerId, 0);
+                        broadcastKittensState(roomId, newState);
+                    }
+                } else if (state.getPhase() == KittensGameState.Phase.AWAITING_FAVOR) {
+                    KittensPlayer giver = state.getPlayerById(currentPlayerId);
+                    if (giver != null && !giver.getHand().isEmpty()) {
+                        KittensCardType randomCard = giver.getHand().get(0);
+                        log.info("Timeout: auto-giving favor card {} for player {} in room {}", randomCard, currentPlayerId, roomId);
+                        KittensGameState newState = kittensService.giveCard(roomId, currentPlayerId, randomCard);
+                        broadcastKittensState(roomId, newState);
+                    }
+                }
+            }
+        } else if ("UNO".equalsIgnoreCase(gameType)) {
+            UnoGameState state = unoService.getGame(roomId);
+            if (state != null && state.getCurrentPlayer() != null && state.getCurrentPlayer().getId().equals(currentPlayerId)) {
+                log.info("Timeout: auto-drawing Uno card for player {} in room {}", currentPlayerId, roomId);
+                UnoGameState newState = unoService.drawCard(roomId, currentPlayerId);
+                broadcastUnoState(roomId, newState);
+            }
+        } else if ("COUP".equalsIgnoreCase(gameType)) {
+            GameState state = coupGameService.getGame(roomId);
+            if (state != null && state.getCurrentPlayer() != null && state.getCurrentPlayer().getId().equals(currentPlayerId)) {
+                if (state.getPhase() == GameState.Phase.PLAYER_TURN) {
+                    log.info("Timeout: auto-performing Coup income for player {} in room {}", currentPlayerId, roomId);
+                    try {
+                        GameState newState = coupGameService.declareAction(roomId, currentPlayerId, com.boardgame.model.ActionType.INCOME, null);
+                        broadcastState(roomId, newState);
+                    } catch (Exception e) {
+                        log.error("Failed to auto-perform Coup income action", e);
+                    }
+                }
+            }
         }
     }
 }

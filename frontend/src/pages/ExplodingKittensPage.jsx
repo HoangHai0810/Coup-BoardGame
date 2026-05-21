@@ -91,7 +91,7 @@ export default function ExplodingKittensPage() {
   }, [roomId, user?.id, subscribe, send, connected]);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [gameState?.actionLog]);
 
   if (!gameState) return (

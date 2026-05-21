@@ -5,6 +5,7 @@ import com.boardgame.model.monopoly.MonopolyPlayer;
 import com.boardgame.model.monopoly.Property;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -53,6 +54,10 @@ public class MonopolyService {
                     player.setInJail(false);
                     player.setTurnsInJail(0);
                     state.addLog(player.getUsername() + " nộp phạt 500k để ra tù.");
+                    checkBankruptcy(state, player, null);
+                    if (player.isBankrupt()) {
+                        return state;
+                    }
                 } else {
                     state.setPhase("END_TURN");
                     return state;
@@ -85,7 +90,11 @@ public class MonopolyService {
                 state.addLog(player.getUsername() + " đến ô " + p.getName() + ", có thể mua với giá " + p.getPrice() + "k.");
             } else if (!p.getOwnerId().equals(player.getId())) {
                 payRent(state, player, p);
-                state.setPhase(d1 == d2 ? "ROLL" : "END_TURN");
+                if (player.isBankrupt()) {
+                    state.setPhase("END_TURN");
+                } else {
+                    state.setPhase(d1 == d2 ? "ROLL" : "END_TURN");
+                }
             } else {
                 state.setPhase(d1 == d2 ? "ROLL" : "END_TURN");
             }
@@ -99,11 +108,13 @@ public class MonopolyService {
             } else if (newPos == 4) { // Income Tax
                 player.deductMoney(2000);
                 state.addLog(player.getUsername() + " đóng Thuế Thu Nhập 2000k.");
-                state.setPhase(d1 == d2 ? "ROLL" : "END_TURN");
+                checkBankruptcy(state, player, null);
+                state.setPhase(player.isBankrupt() ? "END_TURN" : (d1 == d2 ? "ROLL" : "END_TURN"));
             } else if (newPos == 38) { // Luxury Tax
                 player.deductMoney(1000);
                 state.addLog(player.getUsername() + " đóng Thuế Xa Xỉ 1000k.");
-                state.setPhase(d1 == d2 ? "ROLL" : "END_TURN");
+                checkBankruptcy(state, player, null);
+                state.setPhase(player.isBankrupt() ? "END_TURN" : (d1 == d2 ? "ROLL" : "END_TURN"));
             } else {
                 // Free parking, Chance, etc.
                 state.setPhase(d1 == d2 ? "ROLL" : "END_TURN");
@@ -120,6 +131,7 @@ public class MonopolyService {
             payer.deductMoney(rent);
             owner.addMoney(rent);
             state.addLog(payer.getUsername() + " trả " + rent + "k tiền thuê cho " + owner.getUsername());
+            checkBankruptcy(state, payer, owner);
         }
     }
 
@@ -142,9 +154,50 @@ public class MonopolyService {
         return state;
     }
 
+    public MonopolyGameState buildHouse(String roomId, String playerId, int propertyId) {
+        MonopolyGameState state = activeGames.get(roomId);
+        if (state == null) return null;
+
+        MonopolyPlayer player = state.getPlayers().stream().filter(p -> p.getId().equals(playerId)).findFirst().orElse(null);
+        if (player == null || player.isBankrupt()) return state;
+
+        Property p = state.getBoard().get(propertyId);
+        if (p == null || !playerId.equals(p.getOwnerId())) return state;
+
+        if (p.getHousePrice() == 0 || p.getHousesBuilt() >= 5) {
+            return state; // Can't build or already maxed (hotel)
+        }
+
+        // Check if player owns all properties in this color group
+        String group = p.getColorGroup();
+        boolean ownsAll = state.getBoard().values().stream()
+                .filter(prop -> prop.getColorGroup().equals(group))
+                .allMatch(prop -> playerId.equals(prop.getOwnerId()));
+
+        if (!ownsAll) {
+            state.addLog("Bạn phải sở hữu tất cả các tài sản cùng màu trước khi xây nhà!");
+            return state;
+        }
+
+        if (player.getMoney() < p.getHousePrice()) {
+            state.addLog("Không đủ tiền để xây nhà trên " + p.getName());
+            return state;
+        }
+
+        player.deductMoney(p.getHousePrice());
+        p.setHousesBuilt(p.getHousesBuilt() + 1);
+        if (p.getHousesBuilt() == 5) {
+            state.addLog(player.getUsername() + " đã nâng cấp lên Khách Sạn trên " + p.getName() + "!");
+        } else {
+            state.addLog(player.getUsername() + " đã xây thêm 1 ngôi nhà trên " + p.getName() + " (Tổng: " + p.getHousesBuilt() + " nhà).");
+        }
+
+        return state;
+    }
+
     public MonopolyGameState endTurn(String roomId, String playerId) {
         MonopolyGameState state = activeGames.get(roomId);
-        if (state == null || !state.getPhase().equals("END_TURN") && !state.getPhase().equals("BUY")) return state;
+        if (state == null || (!state.getPhase().equals("END_TURN") && !state.getPhase().equals("BUY"))) return state;
 
         MonopolyPlayer player = state.getPlayers().get(state.getCurrentTurnIndex());
         if (!player.getId().equals(playerId)) return state;
@@ -159,6 +212,53 @@ public class MonopolyService {
 
         state.addLog("Đến lượt của " + state.getPlayers().get(state.getCurrentTurnIndex()).getUsername());
         return state;
+    }
+
+    private void checkBankruptcy(MonopolyGameState state, MonopolyPlayer player, MonopolyPlayer creditor) {
+        if (player.getMoney() < 0) {
+            player.setBankrupt(true);
+            player.setMoney(0);
+            state.addLog("💥 " + player.getUsername() + " đã bị phá sản!");
+
+            // Release or transfer properties
+            List<Integer> properties = new ArrayList<>(player.getPropertiesOwned());
+            player.getPropertiesOwned().clear();
+            for (Integer propId : properties) {
+                Property prop = state.getBoard().get(propId);
+                if (prop != null) {
+                    if (creditor != null) {
+                        prop.setOwnerId(creditor.getId());
+                        creditor.getPropertiesOwned().add(propId);
+                        state.addLog("🏠 Tài sản " + prop.getName() + " được chuyển giao cho " + creditor.getUsername());
+                    } else {
+                        prop.setOwnerId(null);
+                        prop.setHousesBuilt(0);
+                        state.addLog("🏠 Tài sản " + prop.getName() + " đã được trả về ngân hàng.");
+                    }
+                }
+            }
+
+            // Check if game over
+            long activePlayersCount = state.getPlayers().stream().filter(p -> !p.isBankrupt()).count();
+            if (activePlayersCount <= 1) {
+                state.setPhase("GAME_OVER");
+                MonopolyPlayer winner = state.getPlayers().stream().filter(p -> !p.isBankrupt()).findFirst().orElse(null);
+                if (winner != null) {
+                    state.addLog("🏆 Trò chơi kết thúc! Người chiến thắng là " + winner.getUsername() + "!");
+                } else {
+                    state.addLog("🏆 Trò chơi kết thúc!");
+                }
+            } else if (state.getPlayers().get(state.getCurrentTurnIndex()).getId().equals(player.getId())) {
+                // Auto advance turn since the active player went bankrupt
+                state.setDoublesCount(0);
+                state.setHasRolled(false);
+                state.setPhase("ROLL");
+                do {
+                    state.setCurrentTurnIndex((state.getCurrentTurnIndex() + 1) % state.getPlayers().size());
+                } while (state.getPlayers().get(state.getCurrentTurnIndex()).isBankrupt());
+                state.addLog("Đến lượt của " + state.getPlayers().get(state.getCurrentTurnIndex()).getUsername());
+            }
+        }
     }
 
     public void removeGame(String roomId) {

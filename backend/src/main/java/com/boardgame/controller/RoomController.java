@@ -26,9 +26,17 @@ public class RoomController {
     private final com.boardgame.service.CoupGameService coupGameService;
 
     public record CreateRoomRequest(
-            @NotBlank String name,
-            @Min(0) @Max(5) int aiCount,
-            @Min(2) @Max(6) int maxPlayers,
+            @NotBlank(message = "Room name must not be blank") 
+            String name,
+
+            @Min(value = 0, message = "AI count must be at least 0") 
+            @Max(value = 5, message = "AI count cannot exceed 5") 
+            int aiCount,
+
+            @Min(value = 2, message = "Maximum players must be at least 2") 
+            @Max(value = 6, message = "Maximum players cannot exceed 6") 
+            int maxPlayers,
+
             String gameType
     ) {}
 

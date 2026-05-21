@@ -14,12 +14,18 @@ const WILD_IMG = '/assets/uno_wild_card_premium_1778036505397.png';
 const DRAW4_IMG = '/assets/uno_wild_draw4_premium_1778036593265.png';
 const COLOR_MAP = { RED: '#e74c3c', BLUE: '#3498db', GREEN: '#2ecc71', YELLOW: '#f1c40f', WILD: '#2c3e50' };
 
+const NUMBER_MAP = {
+  'ZERO': '0', 'ONE': '1', 'TWO': '2', 'THREE': '3', 'FOUR': '4', 
+  'FIVE': '5', 'SIX': '6', 'SEVEN': '7', 'EIGHT': '8', 'NINE': '9'
+};
+
 const getUnoSymbol = (val) => {
   if (val === 'SKIP') return '⊘';
   if (val === 'REVERSE') return '⇄';
   if (val === 'DRAW_2') return '+2';
   if (val === 'WILD_DRAW_4') return '+4';
   if (val === 'WILD') return '🌈';
+  if (NUMBER_MAP[val]) return NUMBER_MAP[val];
   return val;
 };
 export default function UnoPage() {
@@ -184,7 +190,7 @@ export default function UnoPage() {
               >
                 <div style={{ position: 'absolute', inset: 0, background: COLOR_MAP[gameState.activeColor] || '#2c3e50' }}>
                   {gameState.activeColor !== 'WILD' && (
-                    <div style={{ position: 'absolute', top: '-10%', left: '-20%', width: '140%', height: '120%', background: COLOR_MAP[gameState.activeColor], borderRadius: '50%', transform: 'rotate(-25deg)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }} />
+                    <div style={{ position: 'absolute', top: '15%', left: '10%', width: '80%', height: '70%', background: '#fff', borderRadius: '50%', transform: 'rotate(-25deg)', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }} />
                   )}
                 </div>
 
@@ -200,7 +206,7 @@ export default function UnoPage() {
                     <div style={{ position: 'absolute', top: 8, left: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '1.4rem' : '1.8rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1 }}>
                       {getUnoSymbol(gameState.activeValue)}
                     </div>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '4.5rem' : '5.5rem', fontWeight: 900, textShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: COLOR_MAP[gameState.activeColor], fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '4rem' : '5.5rem', fontWeight: 900, textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
                       {getUnoSymbol(gameState.activeValue)}
                     </div>
                     <div style={{ position: 'absolute', bottom: 8, right: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(gameState.activeValue) ? '1.4rem' : '1.8rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1, transform: 'rotate(180deg)' }}>
@@ -261,7 +267,7 @@ export default function UnoPage() {
               >
                 <div style={{ position: 'absolute', inset: 0, background: card.color === 'WILD' ? '#2c3e50' : COLOR_MAP[card.color] }}>
                   {card.color !== 'WILD' && (
-                    <div style={{ position: 'absolute', top: '-10%', left: '-20%', width: '140%', height: '120%', background: COLOR_MAP[card.color], borderRadius: '50%', transform: 'rotate(-25deg)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }} />
+                    <div style={{ position: 'absolute', top: '15%', left: '10%', width: '80%', height: '70%', background: '#fff', borderRadius: '50%', transform: 'rotate(-25deg)', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }} />
                   )}
                 </div>
 
@@ -272,7 +278,7 @@ export default function UnoPage() {
                     <div style={{ position: 'absolute', top: 8, left: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '1.2rem' : '1.5rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1 }}>
                       {getUnoSymbol(card.value)}
                     </div>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '3.5rem' : '4.5rem', fontWeight: 900, textShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: COLOR_MAP[card.color], fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '3rem' : '4.5rem', fontWeight: 900, textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>
                       {getUnoSymbol(card.value)}
                     </div>
                     <div style={{ position: 'absolute', bottom: 8, right: 8, color: 'white', fontSize: ['SKIP', 'REVERSE', 'DRAW_2'].includes(card.value) ? '1.2rem' : '1.5rem', fontWeight: 900, textShadow: '1px 1px 2px rgba(0,0,0,0.5)', lineHeight: 1, transform: 'rotate(180deg)' }}>

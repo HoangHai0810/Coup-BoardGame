@@ -25,14 +25,25 @@ public class AuthController {
     private final JwtService jwtService;
 
     public record RegisterRequest(
-            @NotBlank @Size(min = 3, max = 50) String username,
-            @NotBlank @Email String email,
-            @NotBlank @Size(min = 6) String password
+            @NotBlank(message = "Username must not be blank") 
+            @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters") 
+            String username,
+
+            @NotBlank(message = "Email must not be blank") 
+            @Email(message = "Invalid email format") 
+            String email,
+
+            @NotBlank(message = "Password must not be blank") 
+            @Size(min = 6, message = "Password must be at least 6 characters") 
+            String password
     ) {}
 
     public record LoginRequest(
-            @NotBlank String usernameOrEmail,
-            @NotBlank String password
+            @NotBlank(message = "Username or email must not be blank") 
+            String usernameOrEmail,
+
+            @NotBlank(message = "Password must not be blank") 
+            String password
     ) {}
 
     @PostMapping("/register")

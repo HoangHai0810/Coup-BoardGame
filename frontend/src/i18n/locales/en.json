@@ -11,7 +11,10 @@
     "playNow": "Play Now",
     "rules": "Game Rules",
     "characters": "Characters",
-    "heroDesc": "Jump right into the action. Bluff, steal, and assassinate your way to victory in Coup!"
+    "heroDesc": "Jump right into the action. Bluff, steal, and assassinate your way to victory in Coup!",
+    "kittensDesc": "Avoid the exploding kittens — use special cards to survive!",
+    "unoDesc": "Get rid of all your cards before anyone else. Don't forget to yell UNO!",
+    "monopolyDesc": "Buy land, build houses, bankrupt your opponents. The real estate mogul wins!"
   },
   "auth": {
     "loginTitle": "Welcome Back!",

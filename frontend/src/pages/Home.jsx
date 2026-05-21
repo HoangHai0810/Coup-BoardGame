@@ -30,7 +30,7 @@ export default function Home() {
       tag: 'Luck & Chaos',
       players: '2–5 players',
       duration: '15 min',
-      description: 'Tránh những chú mèo phát nổ — dùng thẻ đặc biệt để sống sót!',
+      description: t('home.kittensDesc'),
       gradient: 'linear-gradient(135deg, #2d1a0a 0%, #7a4020 100%)',
       accentColor: '#f5a642',
       icon: '💥',
@@ -42,7 +42,7 @@ export default function Home() {
       tag: 'Card Game',
       players: '2–10 players',
       duration: '15–30 min',
-      description: 'Đặt hết bài trước người khác. Đừng quên hô UNO!',
+      description: t('home.unoDesc'),
       gradient: 'linear-gradient(135deg, #0a2d1a 0%, #1a6e3d 100%)',
       accentColor: '#3ec97d',
       icon: '🎴',
@@ -54,11 +54,11 @@ export default function Home() {
       tag: 'Strategy & Trading',
       players: '2–6 players',
       duration: '60–180 min',
-      description: 'Mua đất, xây nhà, phá sản đối thủ. Kẻ thống trị bất động sản thắng!',
+      description: t('home.monopolyDesc'),
       gradient: 'linear-gradient(135deg, #0a1a2d 0%, #1a3d6e 100%)',
       accentColor: '#4a90e2',
       icon: '🏦',
-      available: false
+      available: true
     }
   ];
 

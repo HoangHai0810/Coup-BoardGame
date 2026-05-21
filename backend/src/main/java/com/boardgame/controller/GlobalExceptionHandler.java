@@ -14,21 +14,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> {
-                    String fieldName = error.getField();
-                    String defaultMessage = error.getDefaultMessage();
-                    
-                    if ("username".equals(fieldName)) {
-                        return "Tên tài khoản phải từ 3 đến 50 ký tự.";
-                    }
-                    if ("email".equals(fieldName)) {
-                        return "Địa chỉ email không hợp lệ.";
-                    }
-                    if ("password".equals(fieldName)) {
-                        return "Mật khẩu phải chứa ít nhất 6 ký tự.";
-                    }
-                    return fieldName + ": " + defaultMessage;
-                })
+                .map(error -> error.getDefaultMessage())
                 .collect(Collectors.joining(" "));
 
         return ResponseEntity.badRequest().body(Map.of("error", errorMessage));

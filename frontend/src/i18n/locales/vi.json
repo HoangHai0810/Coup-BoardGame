@@ -11,7 +11,10 @@
     "playNow": "Chơi ngay",
     "rules": "Luật chơi",
     "characters": "Nhân vật",
-    "heroDesc": "Dùng mưu mẹo, lừa lọc và ám sát để trở thành người sống sót cuối cùng!"
+    "heroDesc": "Dùng mưu mẹo, lừa lọc và ám sát để trở thành người sống sót cuối cùng!",
+    "kittensDesc": "Tránh những chú mèo phát nổ — dùng thẻ đặc biệt để sống sót!",
+    "unoDesc": "Đặt hết bài trước người khác. Đừng quên hô UNO!",
+    "monopolyDesc": "Mua đất, xây nhà, phá sản đối thủ. Kẻ thống trị bất động sản thắng!"
   },
   "lobby": {
     "title": "Sảnh chờ",

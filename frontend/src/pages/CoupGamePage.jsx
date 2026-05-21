@@ -54,7 +54,7 @@ export default function CoupGamePage() {
   }, [roomId, user?.id, subscribe, send, connected]);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [gameState?.actionLog]);
 
   const sendAction = useCallback((action, targetId = null) => {

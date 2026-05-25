@@ -38,6 +38,10 @@ public class RoomEntity {
     @Builder.Default
     private int aiCount = 0;
 
+    @Column
+    @Builder.Default
+    private String boardType = "VIETNAM";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

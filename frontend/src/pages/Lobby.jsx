@@ -16,7 +16,7 @@ export default function Lobby() {
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', maxPlayers: 4, aiCount: 0, gameType: 'COUP' });
+  const [createForm, setCreateForm] = useState({ name: '', maxPlayers: 4, aiCount: 0, gameType: 'COUP', boardType: 'VIETNAM' });
   const [creating, setCreating] = useState(false);
   const [showQuickSelect, setShowQuickSelect] = useState(false);
   const [joinCode, setJoinCode] = useState('');
@@ -54,7 +54,8 @@ export default function Lobby() {
         name: createForm.name || t('lobby.defaultRoomName', { username: user.username }),
         maxPlayers: parseInt(createForm.maxPlayers),
         aiCount: parseInt(createForm.aiCount),
-        gameType: createForm.gameType
+        gameType: createForm.gameType,
+        boardType: createForm.boardType
       });
       toast.success(t('lobby.roomCreated'));
       navigate(`/room/${res.data.id}`);
@@ -232,7 +233,7 @@ export default function Lobby() {
                     {/* Player avatars */}
                     <div style={{ display: 'flex', gap: -12, marginBottom: 32, flexWrap: 'wrap', paddingLeft: 12 }}>
                       {room.players.map((p, idx) => (
-                        <img key={p.id} src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`}
+                        <img key={p.id} src={p.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${p.username}`}
                           alt={p.username} title={p.username}
                           style={{ 
                             width: 44, height: 44, borderRadius: '50%', border: '4px solid white', 
@@ -271,7 +272,7 @@ export default function Lobby() {
                 ) : (
                   onlineUsers.map(u => (
                     <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 16, background: u.id === user?.id ? '#f0f4f8' : 'transparent' }}>
-                      <img src={u.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${u.username}`} 
+                      <img src={u.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${u.username}`} 
                         alt={u.username} 
                         style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid ' + (u.id === user?.id ? 'var(--accent-primary)' : '#e0e6ed') }} 
                       />
@@ -323,7 +324,7 @@ export default function Lobby() {
 
                 <div className="form-group" style={{ marginBottom: 32 }}>
                   <label style={{ fontSize: '1.1rem' }}>🎮 {t('lobby.gameSelection')}</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 12 }}>
+                  <div className="game-select-grid">
                     {[
                       { type: 'COUP', icon: '🃏', name: 'Coup' },
                       { type: 'KITTENS', icon: '🙀', name: t('games.kittens') || 'Mèo nổ', players: 5 },
@@ -342,8 +343,8 @@ export default function Lobby() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 40 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 40 }}>
+                  <div className="form-group" style={{ flex: 1, minWidth: 150, marginBottom: 0 }}>
                     <label>👥 {t('lobby.maxPlayers')}</label>
                       <select className="input"
                         value={createForm.maxPlayers}
@@ -353,7 +354,7 @@ export default function Lobby() {
                       </select>
                   </div>
 
-                  <div className="form-group" style={{ marginBottom: 0 }}>
+                  <div className="form-group" style={{ flex: 1, minWidth: 150, marginBottom: 0 }}>
                     <label>🤖 {t('lobby.aiBots')}</label>
                     <select className="input"
                       value={createForm.aiCount}
@@ -365,6 +366,30 @@ export default function Lobby() {
                     </select>
                   </div>
                 </div>
+
+                {createForm.gameType === 'MONOPOLY' && (
+                  <div className="form-group" style={{ marginBottom: 40 }}>
+                    <label>🌍 Phiên bản Bản Đồ</label>
+                    <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+                      <div 
+                        onClick={() => setCreateForm({ ...createForm, boardType: 'VIETNAM' })}
+                        className={`game-card-select ${createForm.boardType === 'VIETNAM' ? 'active' : ''}`}
+                        style={{ flex: 1, padding: '16px', flexDirection: 'row', justifyContent: 'center' }}
+                      >
+                        <span style={{ fontSize: '1.5rem' }}>🇻🇳</span>
+                        <span>Việt Nam</span>
+                      </div>
+                      <div 
+                        onClick={() => setCreateForm({ ...createForm, boardType: 'WORLD' })}
+                        className={`game-card-select ${createForm.boardType === 'WORLD' ? 'active' : ''}`}
+                        style={{ flex: 1, padding: '16px', flexDirection: 'row', justifyContent: 'center' }}
+                      >
+                        <span style={{ fontSize: '1.5rem' }}>🌎</span>
+                        <span>Thế Giới</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: 20, marginTop: 40 }}>
                   <button type="button" className="btn btn-ghost"

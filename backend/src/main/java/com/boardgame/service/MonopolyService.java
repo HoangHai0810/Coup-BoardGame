@@ -17,8 +17,8 @@ public class MonopolyService {
     private final Map<String, MonopolyGameState> activeGames = new ConcurrentHashMap<>();
     private final Random random = new Random();
 
-    public MonopolyGameState startGame(String roomId, List<MonopolyPlayer> players) {
-        MonopolyGameState state = new MonopolyGameState(roomId);
+    public MonopolyGameState startGame(String roomId, String boardType, List<MonopolyPlayer> players) {
+        MonopolyGameState state = new MonopolyGameState(roomId, boardType);
         state.setPlayers(players);
         state.addLog("Trò chơi Cờ Tỉ Phú bắt đầu!");
         activeGames.put(roomId, state);

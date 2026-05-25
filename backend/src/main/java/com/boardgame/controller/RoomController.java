@@ -37,7 +37,9 @@ public class RoomController {
             @Max(value = 6, message = "Maximum players cannot exceed 6") 
             int maxPlayers,
 
-            String gameType
+            String gameType,
+            
+            String boardType
     ) {}
 
     @GetMapping
@@ -62,6 +64,7 @@ public class RoomController {
                 .aiCount(req.aiCount())
                 .maxPlayers(req.maxPlayers())
                 .gameType(req.gameType() != null ? req.gameType().toUpperCase() : "COUP")
+                .boardType(req.boardType() != null ? req.boardType().toUpperCase() : "VIETNAM")
                 .playerIds(new ArrayList<>(List.of(me.getId().toString())))
                 .build();
         roomRepository.save(room);
@@ -135,6 +138,7 @@ public class RoomController {
                 "name", room.getName(),
                 "hostId", room.getHostId(),
                 "gameType", room.getGameType(),
+                "boardType", room.getBoardType(),
                 "maxPlayers", room.getMaxPlayers(),
                 "aiCount", room.getAiCount(),
                 "status", room.getStatus().name(),

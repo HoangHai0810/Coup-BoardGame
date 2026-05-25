@@ -63,7 +63,7 @@ public class GameWebSocketController {
         for (int i = 0; i < room.getAiCount() && players.size() < room.getMaxPlayers(); i++) {
             String aiId     = "AI_" + (i + 1);
             String aiName   = aiNames[i % aiNames.length];
-            String aiAvatar = "https://api.dicebear.com/7.x/bottts/svg?seed=" + aiName;
+            String aiAvatar = "https://api.dicebear.com/7.x/micah/svg?seed=" + aiName + "&backgroundType=gradientLinear";
             players.add(new Player(aiId, aiName, aiAvatar, true));
         }
 
@@ -87,7 +87,7 @@ public class GameWebSocketController {
             List<com.boardgame.model.monopoly.MonopolyPlayer> monopolyPlayers = players.stream()
                     .map(p -> new com.boardgame.model.monopoly.MonopolyPlayer(p.getId(), p.getUsername(), p.getAvatarUrl(), p.isAI()))
                     .toList();
-            com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.startGame(roomId, monopolyPlayers);
+            com.boardgame.model.monopoly.MonopolyGameState state = monopolyService.startGame(roomId, room.getBoardType(), monopolyPlayers);
             room.setStatus(RoomEntity.RoomStatus.IN_GAME);
             roomRepository.save(room);
             monopolyWebSocketController.broadcastMonopolyState(roomId, state);

@@ -97,6 +97,6 @@ public class AuthController {
     }
     
     private String generateAvatar(String username) {
-        return "https://api.dicebear.com/7.x/adventurer/svg?seed=" + username;
+        return "https://api.dicebear.com/7.x/micah/svg?seed=" + username + "&backgroundType=gradientLinear";
     }
 }

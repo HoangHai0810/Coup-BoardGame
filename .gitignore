@@ -1,4 +1,6 @@
 .env
-target/
+
 backend/target/
+backend/logs
+
 .DS_Store

@@ -83,96 +83,113 @@ export default function MonopolyPage() {
     }
   };
 
-  return (
-    <div className="page" style={{ 
-      display: 'flex', height: '100vh', overflow: 'hidden', 
-      background: 'linear-gradient(135deg, #1a1c2c 0%, #4a192c 100%)',
-      fontFamily: 'Inter, sans-serif'
-    }}>
-      {/* LEFT PANEL: Game Board */}
-      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ 
-          width: 720, height: 720, 
-          background: 'white', 
-          boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
-          borderRadius: 12,
-          position: 'relative',
-          padding: 10,
-          border: '4px solid #333'
-        }}>
-          <div style={{
-            width: '100%', height: '100%',
-            backgroundImage: 'url(/assets/monopoly_board.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            position: 'relative'
-          }}>
-            {/* Clickable Overlay for properties */}
-            {Array.from({length: 40}).map((_, i) => {
-                let x, y;
-                if (i <= 10) { x = 10 - i; y = 10; }
-                else if (i <= 20) { x = 0; y = 20 - i; }
-                else if (i <= 30) { x = i - 20; y = 0; }
-                else { x = 10; y = i - 30; }
-                const unit = 100 / 11;
-                const prop = gameState.board[i];
-                const ownerIndex = prop?.ownerId ? gameState.players.findIndex(p => p.id === prop.ownerId) : -1;
-                const ownerColor = ownerIndex === 0 ? '#ff5252' : ownerIndex === 1 ? '#448aff' : ownerIndex === 2 ? '#4caf50' : ownerIndex === 3 ? '#ffd740' : '#888';
+  const SPECIAL_TILES = {
+    0: { name: "Bắt Đầu", type: "GO", icon: "🚩", price: "Nhận 2000K" },
+    2: { name: "Cơ Hội", type: "CHANCE", icon: "❓" },
+    4: { name: "Thuế", type: "TAX", price: "2000K", icon: "💸" },
+    7: { name: "Biến Động", type: "CHEST", icon: "📦" },
+    10: { name: "Thăm Tù", type: "JAIL", icon: "👮" },
+    17: { name: "Cơ Hội", type: "CHANCE", icon: "❓" },
+    20: { name: "Bãi Đỗ Xe", type: "FREE_PARKING", icon: "🚗" },
+    22: { name: "Biến Động", type: "CHEST", icon: "📦" },
+    30: { name: "Vô Tù", type: "GO_TO_JAIL", icon: "🚨" },
+    33: { name: "Cơ Hội", type: "CHANCE", icon: "❓" },
+    36: { name: "Biến Động", type: "CHEST", icon: "📦" },
+    38: { name: "Thuế Đặc Biệt", type: "TAX", price: "1000K", icon: "💎" },
+  };
 
+  const getGridPosition = (index) => {
+    if (index <= 10) return { gridColumn: 11 - index, gridRow: 11, orientation: 'bottom' };
+    if (index <= 20) return { gridColumn: 1, gridRow: 21 - index, orientation: 'left' };
+    if (index <= 30) return { gridColumn: index - 19, gridRow: 1, orientation: 'top' };
+    return { gridColumn: 11, gridRow: index - 29, orientation: 'right' };
+  };
+
+  return (
+    <div className="monopoly-page">
+      {/* LEFT PANEL: Game Board */}
+      <div className="monopoly-main">
+        <div className="monopoly-board">
+            {/* 40 Tiles Rendering */}
+            {Array.from({length: 40}).map((_, i) => {
+                const prop = gameState.board[i];
+                const special = SPECIAL_TILES[i];
+                const { gridColumn, gridRow, orientation } = getGridPosition(i);
+                
+                const isCorner = i === 0 || i === 10 || i === 20 || i === 30;
+                
+                let tileName = prop ? prop.name : (special ? special.name : "");
+                let tilePrice = prop ? `${prop.price}K` : (special && special.price ? special.price : "");
+                let colorBar = prop ? getColorGroupColor(prop.colorGroup) : "transparent";
+                
                 return (
                     <div 
                         key={i} 
                         onClick={() => handlePropClick(i)}
+                        className={`monopoly-tile ${orientation} ${isCorner ? 'monopoly-tile-corner' : ''}`}
                         style={{
-                            position: 'absolute',
-                            left: `${x * unit}%`, top: `${y * unit}%`,
-                            width: `${unit}%`, height: `${unit}%`,
+                            gridColumn, gridRow,
                             cursor: prop ? 'pointer' : 'default',
-                            zIndex: 10
                         }}
                     >
-                      {/* Owner stripe indicator on property edge facing board center */}
-                      {prop?.ownerId && (
-                          <div style={{
-                              position: 'absolute',
-                              bottom: i <= 10 ? 'auto' : i >= 20 && i <= 30 ? 0 : 0,
-                              top: i <= 10 ? 0 : i >= 20 && i <= 30 ? 'auto' : 0,
-                              left: i > 10 && i < 20 ? 'auto' : i > 30 ? 0 : 0,
-                              right: i > 10 && i < 20 ? 0 : i > 30 ? 'auto' : 0,
-                              width: (i > 10 && i < 20) || (i > 30) ? '6px' : '100%',
-                              height: (i > 10 && i < 20) || (i > 30) ? '100%' : '6px',
-                              backgroundColor: ownerColor,
-                              boxShadow: '0 0 4px rgba(0,0,0,0.5)',
-                              pointerEvents: 'none'
-                          }} />
-                      )}
+                        {!isCorner && prop && prop.colorGroup !== 'STATION' && prop.colorGroup !== 'UTILITY' && (
+                            <div className="tile-color-bar" style={{ backgroundColor: colorBar }}></div>
+                        )}
+                        
+                        <div className="tile-content">
+                            {isCorner ? (
+                                <>
+                                    <div style={{ fontSize: '2rem', marginBottom: 4 }}>{special?.icon}</div>
+                                    <div style={{ textTransform: 'uppercase' }}>{tileName}</div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="tile-name">{tileName}</div>
+                                    {(prop?.colorGroup === 'STATION' || prop?.colorGroup === 'UTILITY') && (
+                                        <div className="tile-icon">{prop.colorGroup === 'STATION' ? '🚆' : '💡'}</div>
+                                    )}
+                                    {special?.icon && <div className="tile-icon">{special.icon}</div>}
+                                    <div className="tile-price">{tilePrice}</div>
+                                </>
+                            )}
+                        </div>
 
-                      {/* Houses/Hotel badge */}
-                      {prop?.housesBuilt > 0 && (
-                          <div style={{
-                              position: 'absolute',
-                              bottom: i <= 10 ? '8px' : 'auto',
-                              top: i >= 20 && i <= 30 ? '8px' : 'auto',
-                              left: i > 30 ? '8px' : 'auto',
-                              right: i > 10 && i < 20 ? '8px' : 'auto',
-                              // Center on the edge
-                              ...((i <= 10 || (i >= 20 && i <= 30)) ? { left: '50%', transform: 'translateX(-50%)' } : { top: '50%', transform: 'translateY(-50%)' }),
-                              backgroundColor: prop.housesBuilt === 5 ? '#e53935' : '#4caf50',
-                              color: 'white',
-                              padding: '2px 4px',
-                              borderRadius: '4px',
-                              fontSize: '9px',
-                              fontWeight: 'bold',
-                              pointerEvents: 'none',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '1px',
-                              zIndex: 12
-                          }}>
-                              {prop.housesBuilt === 5 ? '🏨' : `🏠${prop.housesBuilt}`}
-                          </div>
-                      )}
+                        {/* Houses/Hotel badge */}
+                        {prop?.housesBuilt > 0 && (
+                            <div style={{
+                                position: 'absolute',
+                                ...(orientation === 'bottom' ? { top: 0, left: 0, right: 0 } : 
+                                   orientation === 'top' ? { bottom: 0, left: 0, right: 0 } : 
+                                   orientation === 'left' ? { right: 0, top: 0, bottom: 0 } : 
+                                   { left: 0, top: 0, bottom: 0 }),
+                                backgroundColor: prop.housesBuilt === 5 ? '#e53935' : '#4caf50',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.65rem',
+                                fontWeight: 'bold',
+                                zIndex: 12,
+                                pointerEvents: 'none'
+                            }}>
+                                {prop.housesBuilt === 5 ? '🏨' : `🏠x${prop.housesBuilt}`}
+                            </div>
+                        )}
+
+                        {/* Owner overlay */}
+                        {prop?.ownerId && (
+                            <div style={{
+                                position: 'absolute', inset: 0,
+                                backgroundColor: 'rgba(0,0,0,0.03)',
+                                border: `3px solid ${
+                                  gameState.players.findIndex(p => p.id === prop.ownerId) === 0 ? '#ff5252' :
+                                  gameState.players.findIndex(p => p.id === prop.ownerId) === 1 ? '#448aff' :
+                                  gameState.players.findIndex(p => p.id === prop.ownerId) === 2 ? '#4caf50' : '#ffd740'
+                                }`,
+                                pointerEvents: 'none',
+                                zIndex: 10
+                            }}></div>
+                        )}
                     </div>
                 );
             })}
@@ -233,6 +250,7 @@ export default function MonopolyPage() {
                     initial={false}
                     animate={{ ...style }}
                     transition={{ type: 'spring', damping: 25, stiffness: 120 }}
+                    className={`player-token ${gameState.hasRolled && gameState.currentTurnIndex === i ? 'moving' : ''}`}
                     style={{
                       position: 'absolute',
                       width: 48, height: 48, borderRadius: '50%',
@@ -249,16 +267,16 @@ export default function MonopolyPage() {
                 );
               })}
             </AnimatePresence>
-          </div>
         </div>
 
         {/* Controls */}
         <div style={{ 
-          marginTop: 40, padding: '24px 48px', 
+          marginTop: 20, padding: '16px 24px', 
           background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)',
-          borderRadius: 100, display: 'flex', gap: 24,
+          borderRadius: 100, display: 'flex', gap: 16,
           border: '1px solid rgba(255,255,255,0.2)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+          boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
+          flexWrap: 'wrap', justifyContent: 'center'
         }}>
             <button 
               className={`btn ${isMyTurn && gameState.phase === 'ROLL' ? 'btn-primary' : 'btn-secondary'}`} 
@@ -386,7 +404,7 @@ export default function MonopolyPage() {
       </AnimatePresence>
 
       {/* RIGHT PANEL: Players & Logs */}
-      <div style={{ width: 400, background: 'white', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
+      <div className="monopoly-sidebar">
         
         {/* Players List */}
         <div style={{ padding: 20, borderBottom: '2px solid var(--border)' }}>

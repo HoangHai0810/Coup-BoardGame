@@ -987,5 +987,164 @@ h1, h2, h3 { font-weight: 900; line-height: 1.2; color: var(--text-primary); }
   }
 }
 
+/* ─── Monopoly Layout ─── */
+.monopoly-page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1c2c 0%, #4a192c 100%);
+  font-family: 'Inter', sans-serif;
+}
+
+.monopoly-main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.monopoly-board {
+  width: 720px;
+  height: 720px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #cbf0df; /* Classic monopoly board color */
+  box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  border-radius: 12px;
+  position: relative;
+  border: 4px solid #333;
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  grid-template-rows: repeat(11, 1fr);
+  overflow: hidden;
+}
+
+.monopoly-tile {
+  border: 1px solid rgba(0,0,0,0.2);
+  position: relative;
+  display: flex;
+  background: #cbf0df;
+  box-sizing: border-box;
+}
+
+.monopoly-tile-corner {
+  background: #e0f7fa;
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+.tile-color-bar {
+  position: absolute;
+  background-color: #ccc;
+  z-index: 0;
+}
+
+.monopoly-tile.bottom .tile-color-bar { top: 0; left: 0; right: 0; height: 25%; border-bottom: 1px solid rgba(0,0,0,0.2); }
+.monopoly-tile.left .tile-color-bar { top: 0; right: 0; bottom: 0; width: 25%; border-left: 1px solid rgba(0,0,0,0.2); }
+.monopoly-tile.top .tile-color-bar { bottom: 0; left: 0; right: 0; height: 25%; border-top: 1px solid rgba(0,0,0,0.2); }
+.monopoly-tile.right .tile-color-bar { top: 0; left: 0; bottom: 0; width: 25%; border-right: 1px solid rgba(0,0,0,0.2); }
+
+.tile-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 1px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  z-index: 1;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+}
+
+.monopoly-tile.bottom .tile-content { padding-top: 28%; }
+.monopoly-tile.top .tile-content { padding-bottom: 28%; transform: rotate(180deg); }
+.monopoly-tile.left .tile-content { padding-right: 28%; transform: rotate(90deg); }
+.monopoly-tile.right .tile-content { padding-left: 28%; transform: rotate(-90deg); }
+
+.tile-name {
+  line-height: 1.1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-transform: uppercase;
+}
+
+.tile-price {
+  font-weight: 900;
+  margin-top: 2px;
+}
+
+.tile-icon {
+  font-size: 1.2rem;
+  margin: 2px 0;
+}
+
+@keyframes player-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-15px) scale(1.1); }
+}
+
+.player-token {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.player-token.moving {
+  animation: player-bounce 0.3s ease-in-out infinite;
+}
+
+.monopoly-sidebar {
+  width: 400px;
+  background: white;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .monopoly-page {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: auto !important;
+  }
+  
+  .monopoly-sidebar {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 2px solid var(--border);
+  }
+}
+
+@media (max-width: 768px) {
+  .monopoly-main {
+    padding: 10px !important;
+  }
+  .monopoly-board {
+    width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* ─── Lobby Create Room ─── */
+.game-select-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .game-select-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 
 

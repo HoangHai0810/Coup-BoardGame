@@ -3,6 +3,7 @@ package com.boardgame.service;
 import com.boardgame.model.monopoly.MonopolyGameState;
 import com.boardgame.model.monopoly.MonopolyPlayer;
 import com.boardgame.model.monopoly.Property;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -12,8 +13,10 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 public class MonopolyService {
 
+    private final RatingService ratingService;
     private final Map<String, MonopolyGameState> activeGames = new ConcurrentHashMap<>();
     private final Random random = new Random();
 
@@ -245,6 +248,8 @@ public class MonopolyService {
                 MonopolyPlayer winner = state.getPlayers().stream().filter(p -> !p.isBankrupt()).findFirst().orElse(null);
                 if (winner != null) {
                     state.addLog("🏆 Trò chơi kết thúc! Người chiến thắng là " + winner.getUsername() + "!");
+                    List<String> allPlayerIds = state.getPlayers().stream().map(MonopolyPlayer::getId).toList();
+                    ratingService.processGameOver("MONOPOLY", allPlayerIds, winner.getId());
                 } else {
                     state.addLog("🏆 Trò chơi kết thúc!");
                 }

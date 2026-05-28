@@ -23,7 +23,7 @@ export default function RoomPage() {
       .then(res => setRoom(res.data))
       .catch(err => {
         if (err.response?.status === 404) {
-          toast.error('Phòng không tồn tại'); 
+          toast.error(t('room.notFound')); 
           navigate('/lobby');
         }
       })
@@ -38,7 +38,7 @@ export default function RoomPage() {
         }
       }).catch(err => {
         if (err.response?.status === 404) {
-          toast.error('Phòng đã bị giải tán');
+          toast.error(t('room.dissolved'));
           navigate('/lobby');
         }
       });
@@ -78,15 +78,15 @@ export default function RoomPage() {
         
         <div style={{ marginBottom: 32 }}>
           <div className="badge badge-gold" style={{ marginBottom: 10 }}>
-            {room?.gameType === 'KITTENS' ? '🙀 Mèo nổ' : room?.gameType === 'UNO' ? '🌈 Uno' : room?.gameType === 'MONOPOLY' ? '🎩 Cờ Tỉ Phú' : '🃏 Coup'}
+            {room?.gameType === 'KITTENS' ? `🙀 ${t('games.kittens')}` : room?.gameType === 'UNO' ? `🌈 ${t('games.uno')}` : room?.gameType === 'MONOPOLY' ? `🎩 ${t('games.monopoly')}` : `🃏 ${t('games.coup')}`}
           </div>
           <h1 style={{ fontSize: '2.5rem', color: 'var(--text-primary)' }}>{room?.name}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontWeight: 800 }}>Mã phòng: {roomId}</p>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 800 }}>{t('room.code')}: {roomId}</p>
         </div>
 
         <div className="room-layout">
           <div className="main-content">
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>👥 Người chơi trong phòng</h2>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 20 }}>👥 {t('room.players')}</h2>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20, marginBottom: 40 }}>
               {room?.players?.map((p, i) => (
@@ -103,9 +103,9 @@ export default function RoomPage() {
                   <div>
                     <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
                         {p.username}
-                        {p.id === user?.id && <span style={{ marginLeft: 6, fontSize: '0.8rem', color: 'var(--accent-primary)' }}>(Bạn)</span>}
+                        {p.id === user?.id && <span style={{ marginLeft: 6, fontSize: '0.8rem', color: 'var(--accent-primary)' }}>{t('room.you')}</span>}
                     </div>
-                    {p.id === room.hostId && <span className="badge badge-gold" style={{ fontSize: '0.6rem' }}>CHỦ PHÒNG</span>}
+                    {p.id === room.hostId && <span className="badge badge-gold" style={{ fontSize: '0.6rem' }}>{t('room.hostBadge')}</span>}
                   </div>
                 </motion.div>
               ))}
@@ -126,15 +126,15 @@ export default function RoomPage() {
                   disabled={!canStart || !connected}
                   style={{ padding: '16px 40px', fontSize: '1.1rem' }}
                 >
-                  {!connected ? 'Đang kết nối...' : 'Bắt đầu ngay →'}
+                  {!connected ? t('room.connecting') : `${t('room.start')} →`}
                 </button>
               ) : (
                 <div className="card" style={{ padding: '16px 24px', flex: 1, textAlign: 'center', background: 'var(--bg-glass)' }}>
-                    <p style={{ fontWeight: 800, color: 'var(--accent-primary)' }}>⌛ Đang chờ chủ phòng bắt đầu...</p>
+                    <p style={{ fontWeight: 800, color: 'var(--accent-primary)' }}>⌛ {t('room.waiting')}</p>
                 </div>
               )}
               <button onClick={handleLeave} className="btn btn-ghost" style={{ border: '2px solid var(--border)' }}>
-                Thoát
+                {t('room.leave')}
               </button>
             </div>
           </div>

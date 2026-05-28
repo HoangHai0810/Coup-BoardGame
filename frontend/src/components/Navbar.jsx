@@ -15,7 +15,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <div className="container navbar-inner">
+      <div className="navbar-inner">
         <Link to="/" className="navbar-logo">♟ BoardRealm</Link>
 
         <div className="navbar-actions">
@@ -23,7 +23,10 @@ export default function Navbar() {
           {user ? (
             <>
               <Link to="/lobby" className="btn btn-ghost" style={{ padding: '8px 16px' }}>
-                🎮 <span className="navbar-btn-text">Lobby</span>
+                🎮 <span className="navbar-btn-text">{t('nav.lobby')}</span>
+              </Link>
+              <Link to="/leaderboard" className="btn btn-ghost" style={{ padding: '8px 16px' }}>
+                🏆 <span className="navbar-btn-text">{t('nav.leaderboard')}</span>
               </Link>
               <div className="navbar-user">
                 <img src={user.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}`}

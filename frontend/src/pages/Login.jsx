@@ -28,7 +28,10 @@ export default function Login() {
   };
 
   return (
-    <div className="page">
+    <div className="page" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Animated Background Blobs */}
+      <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'var(--accent-primary)', filter: 'blur(120px)', opacity: 0.15, zIndex: 0, borderRadius: '50%', pointerEvents: 'none' }} />
+      <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40vw', height: '40vw', background: 'var(--accent-cyan)', filter: 'blur(120px)', opacity: 0.1, zIndex: 0, borderRadius: '50%', pointerEvents: 'none' }} />
       <Navbar />
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -47,7 +50,7 @@ export default function Login() {
           </motion.div>
 
           {/* Form */}
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }} className="card" style={{ padding: 40, borderRadius: 'var(--radius-xl)' }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }} className="glass" style={{ padding: 40, borderRadius: 'var(--radius-xl)' }}>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>{t('auth.username')} / Email</label>

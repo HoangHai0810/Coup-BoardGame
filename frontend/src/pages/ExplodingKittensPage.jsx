@@ -179,7 +179,7 @@ export default function ExplodingKittensPage() {
       <div className="game-board-container">
         
         {/* Opponents Row */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+        <div className="opponents-row" style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
           {others.map(p => (
             <motion.div key={p.id} 
               initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}

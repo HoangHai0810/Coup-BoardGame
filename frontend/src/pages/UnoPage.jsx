@@ -97,7 +97,7 @@ export default function UnoPage() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px 40px', gap: 20, position: 'relative', zIndex: 1, minHeight: 0 }}>
         
         {/* TOP: OPPONENTS */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, height: '140px', flexShrink: 0 }}>
+        <div className="opponents-row" style={{ display: 'flex', justifyContent: 'center', gap: 24, height: '140px', flexShrink: 0 }}>
           {gameState.players.filter(p => p.id !== user?.id).map((p, i) => (
             <motion.div key={p.id} 
               initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
@@ -122,7 +122,7 @@ export default function UnoPage() {
         <div className="game-grid-layout">
           
           {/* LEFT: MY STATUS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="game-left-col" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <motion.div className={`glass ${isMyTurn ? 'active-turn' : ''}`} 
               style={{ 
                 padding: 24, borderRadius: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', 
@@ -156,7 +156,7 @@ export default function UnoPage() {
           </div>
 
           {/* CENTER: PLAY AREA */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+          <div className="game-center-col" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
             <TurnTimer 
               currentPlayerId={gameState.currentPlayerId} 
               currentPlayerName={gameState.players.find(p => p.id === gameState.currentPlayerId)?.username || ''}
@@ -225,7 +225,7 @@ export default function UnoPage() {
           </div>
 
           {/* RIGHT: CHAT & SPECIAL */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="game-right-col" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <ChatBox roomId={roomId} />
             
             <AnimatePresence>

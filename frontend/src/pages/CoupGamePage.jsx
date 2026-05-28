@@ -123,7 +123,7 @@ export default function CoupGamePage() {
       }}>
         
         {/* TOP: OTHER PLAYERS */}
-        <div style={{ 
+        <div className="opponents-row" style={{ 
           display: 'flex', gap: 20, justifyContent: 'center', 
           height: '180px', flexShrink: 0 
         }}>
@@ -188,7 +188,7 @@ export default function CoupGamePage() {
         <div className="game-grid-layout">
           
           {/* LEFT: MY STATUS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
+          <div className="game-left-col" style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
             <motion.div 
               className={`player-seat ${isMyTurn ? 'active-turn' : ''}`} 
               style={{ padding: '24px', background: 'white', borderRadius: 32, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
@@ -231,7 +231,7 @@ export default function CoupGamePage() {
           </div>
 
           {/* CENTER: GAMEPLAY BOARD */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
+          <div className="game-center-col" style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
             <TurnTimer 
               currentPlayerId={gameState.currentPlayerId} 
               currentPlayerName={gameState.players?.find(p => p.id === gameState.currentPlayerId)?.username || ''}
@@ -298,7 +298,7 @@ export default function CoupGamePage() {
           </div>
 
           {/* RIGHT: LOG & CHAT */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
+          <div className="game-right-col" style={{ display: 'flex', flexDirection: 'column', gap: 24, minHeight: 0 }}>
              <div className="card" style={{ flex: 1, background: 'white', borderRadius: 32, padding: '24px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <h3 style={{ marginBottom: 16, fontSize: '1.1rem' }}>📜 {t('game.actionLog')}</h3>
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>

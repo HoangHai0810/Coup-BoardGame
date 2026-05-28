@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import ChatBox from '../components/ChatBox';
 import api from '../services/api';
+import { useSocket } from '../contexts/SocketContext';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,7 +20,21 @@ export default function Lobby() {
   const [createForm, setCreateForm] = useState({ name: '', maxPlayers: 4, aiCount: 0, gameType: 'COUP', boardType: 'VIETNAM' });
   const [creating, setCreating] = useState(false);
   const [showQuickSelect, setShowQuickSelect] = useState(false);
+  const [showMatchmakingSelect, setShowMatchmakingSelect] = useState(false);
+  const [isMatchmaking, setIsMatchmaking] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+  const { subscribe, send } = useSocket();
+
+  useEffect(() => {
+    const unsub = subscribe('/user/queue/matchmaking', (msg) => {
+      if (msg.status === 'MATCH_FOUND') {
+        setIsMatchmaking(false);
+        toast.success(t('lobby.matchFound') || 'Đã tìm thấy trận! Đang vào phòng...');
+        navigate(`/room/${msg.roomId}`);
+      }
+    });
+    return () => unsub && unsub();
+  }, [subscribe, navigate, t]);
 
   const fetchRooms = async () => {
     try {
@@ -85,7 +100,6 @@ export default function Lobby() {
     }
   };
 
-  // Quick play vs AI
   const handleQuickPlay = async (type) => {
     setCreating(true);
     setShowQuickSelect(false);
@@ -99,6 +113,20 @@ export default function Lobby() {
       navigate(`/room/${res.data.id}`);
     } catch { toast.error(t('lobby.errorCreateGame')); }
     finally { setCreating(false); }
+  };
+
+  const joinMatchmaking = (type) => {
+    setShowMatchmakingSelect(false);
+    setIsMatchmaking(true);
+    send(`/app/matchmaking/join/${type}`, {});
+  };
+
+  const cancelMatchmaking = () => {
+    // Cannot know exactly which type we joined without storing it, or just send leave for all
+    ['COUP', 'KITTENS', 'UNO', 'MONOPOLY'].forEach(type => {
+      send(`/app/matchmaking/leave/${type}`, {});
+    });
+    setIsMatchmaking(false);
   };
 
   return (
@@ -117,6 +145,40 @@ export default function Lobby() {
           </motion.div>
           
           <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ display: 'flex', gap: 16, flexWrap: 'wrap', position: 'relative' }}>
+            
+            {/* Find Match Button */}
+            <div style={{ position: 'relative' }}>
+              {isMatchmaking ? (
+                <button onClick={cancelMatchmaking} className="btn btn-red" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div>
+                  {t('lobby.cancelMatchmaking') || 'Hủy ghép trận...'}
+                </button>
+              ) : (
+                <button onClick={() => setShowMatchmakingSelect(!showMatchmakingSelect)} className="btn btn-gold" style={{ padding: '14px 28px' }}>
+                  ⚔️ {t('lobby.matchmaking') || 'Ghép trận'}
+                </button>
+              )}
+              
+              <AnimatePresence>
+                {showMatchmakingSelect && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 15, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 15, scale: 0.9 }}
+                    style={{
+                      position: 'absolute', top: '115%', right: 0, background: 'white', 
+                      padding: 16, borderRadius: 24, boxShadow: 'var(--shadow-lg)',
+                      zIndex: 1000, display: 'flex', gap: 12, border: '4px solid var(--accent-gold)',
+                      minWidth: 400
+                    }}
+                  >
+                    <button onClick={() => joinMatchmaking('COUP')} className="btn btn-ghost" style={{ flex: 1 }}>🃏 Coup</button>
+                    <button onClick={() => joinMatchmaking('KITTENS')} className="btn btn-ghost" style={{ flex: 1, color: '#f57c00' }}>🙀 {t('games.kittens') || 'Mèo nổ'}</button>
+                    <button onClick={() => joinMatchmaking('UNO')} className="btn btn-ghost" style={{ flex: 1, color: '#1976d2' }}>🌈 Uno</button>
+                    <button onClick={() => joinMatchmaking('MONOPOLY')} className="btn btn-ghost" style={{ flex: 1, color: '#27ae60' }}>🎩 {t('games.monopoly') || 'Cờ tỷ phú'}</button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button onClick={() => setShowQuickSelect(!showQuickSelect)} className="btn btn-blue" disabled={creating} style={{ padding: '14px 28px' }}>
               ⚡ {t('lobby.quickPlay')}
             </button>
@@ -128,12 +190,13 @@ export default function Lobby() {
                     position: 'absolute', top: '115%', right: 0, background: 'white', 
                     padding: 16, borderRadius: 24, boxShadow: 'var(--shadow-lg)',
                     zIndex: 1000, display: 'flex', gap: 12, border: '4px solid var(--accent-primary)',
-                    minWidth: 320
+                    minWidth: 420
                   }}
                 >
                   <button onClick={() => handleQuickPlay('COUP')} className="btn btn-ghost" style={{ flex: 1 }}>🃏 Coup</button>
                   <button onClick={() => handleQuickPlay('KITTENS')} className="btn btn-ghost" style={{ flex: 1, color: '#f57c00' }}>🙀 {t('games.kittens') || 'Mèo nổ'}</button>
                   <button onClick={() => handleQuickPlay('UNO')} className="btn btn-ghost" style={{ flex: 1, color: '#1976d2' }}>🌈 Uno</button>
+                  <button onClick={() => handleQuickPlay('MONOPOLY')} className="btn btn-ghost" style={{ flex: 1, color: '#27ae60' }}>🎩 {t('games.monopoly') || 'Cờ tỷ phú'}</button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -145,10 +208,10 @@ export default function Lobby() {
 
         {/* Join by code */}
         <motion.div 
-          className="card" 
+          className="glass" 
           initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          style={{ padding: '24px 32px', marginBottom: 40, background: 'white', borderRadius: 32, border: '4px solid #e0e6ed' }}
+          style={{ padding: '24px 32px', marginBottom: 40, borderRadius: 32 }}
         >
           <form onSubmit={handleJoinByCode} style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 900 }}>
@@ -183,9 +246,9 @@ export default function Lobby() {
               </div>
             ) : rooms.length === 0 ? (
               <motion.div 
-                className="card" 
+                className="glass" 
                 initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                style={{ padding: 80, textAlign: 'center', border: '5px dashed var(--border)', borderRadius: 40, background: 'rgba(255,255,255,0.4)' }}
+                style={{ padding: 80, textAlign: 'center', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 40 }}
               >
                 <div style={{ fontSize: '5rem', marginBottom: 24 }}>🎭</div>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontWeight: 800, fontSize: '1.2rem' }}>
@@ -200,18 +263,18 @@ export default function Lobby() {
                 {rooms.map((room, i) => (
                   <motion.div 
                     key={room.id} 
-                    className="card" 
+                    className="glass" 
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.08 }}
-                    style={{ padding: 32, borderRadius: 32, border: '4px solid #f0f4f8' }}
+                    style={{ padding: 32, borderRadius: 32 }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h3 style={{ fontSize: '1.4rem', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.name}</h3>
                         <code style={{
-                          fontSize: '0.9rem', color: '#f57f17', fontWeight: 900,
-                          background: '#fff8e1', padding: '6px 14px', borderRadius: 12, border: '3px solid #ffe082'
+                          fontSize: '0.9rem', color: 'var(--accent-gold)', fontWeight: 900,
+                          background: 'rgba(243, 156, 18, 0.1)', padding: '6px 14px', borderRadius: 12, border: '1px solid rgba(243, 156, 18, 0.3)'
                         }}>
                           #{room.id}
                         </code>
@@ -220,11 +283,11 @@ export default function Lobby() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-                      <span style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 800, background: '#f0f4f8', padding: '6px 14px', borderRadius: 99 }}>
+                      <span style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 800, background: 'rgba(255,255,255,0.1)', padding: '6px 14px', borderRadius: 99 }}>
                         👥 {room.players.length} / {room.maxPlayers}
                       </span>
                       {room.aiCount > 0 && (
-                        <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 800, background: '#fff3e0', padding: '6px 14px', borderRadius: 99 }}>
+                        <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 800, background: 'rgba(255,255,255,0.05)', padding: '6px 14px', borderRadius: 99 }}>
                           🤖 {room.aiCount} AI
                         </span>
                       )}
@@ -236,7 +299,7 @@ export default function Lobby() {
                         <img key={p.id} src={p.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${p.username}`}
                           alt={p.username} title={p.username}
                           style={{ 
-                            width: 44, height: 44, borderRadius: '50%', border: '4px solid white', 
+                            width: 44, height: 44, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', 
                             marginLeft: -12, zIndex: room.players.length - idx, boxShadow: '0 4px 8px rgba(0,0,0,0.1)' 
                           }}
                         />
@@ -260,7 +323,7 @@ export default function Lobby() {
           <aside style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             <ChatBox roomId="global" />
             
-            <div className="card" style={{ padding: 32, borderRadius: 32, border: '4px solid #e0e6ed' }}>
+            <div className="glass" style={{ padding: 32, borderRadius: 32 }}>
               <h3 style={{ fontSize: '1.2rem', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, color: 'var(--accent-blue)' }}>
                 <span className="online-dot" /> {t('lobby.onlinePlayers')}
               </h3>
@@ -271,10 +334,10 @@ export default function Lobby() {
                   </p>
                 ) : (
                   onlineUsers.map(u => (
-                    <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 16, background: u.id === user?.id ? '#f0f4f8' : 'transparent' }}>
+                    <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 16, background: u.id === user?.id ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
                       <img src={u.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${u.username}`} 
                         alt={u.username} 
-                        style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid ' + (u.id === user?.id ? 'var(--accent-primary)' : '#e0e6ed') }} 
+                        style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid ' + (u.id === user?.id ? 'var(--accent-primary)' : 'rgba(255,255,255,0.2)') }} 
                       />
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontSize: '1rem', fontWeight: 800 }}>{u.username}</span>
@@ -369,7 +432,7 @@ export default function Lobby() {
 
                 {createForm.gameType === 'MONOPOLY' && (
                   <div className="form-group" style={{ marginBottom: 40 }}>
-                    <label>🌍 Phiên bản Bản Đồ</label>
+                    <label>🌍 {t('lobby.boardVersion') || 'Phiên bản Bản Đồ'}</label>
                     <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
                       <div 
                         onClick={() => setCreateForm({ ...createForm, boardType: 'VIETNAM' })}
@@ -377,7 +440,7 @@ export default function Lobby() {
                         style={{ flex: 1, padding: '16px', flexDirection: 'row', justifyContent: 'center' }}
                       >
                         <span style={{ fontSize: '1.5rem' }}>🇻🇳</span>
-                        <span>Việt Nam</span>
+                        <span>{t('lobby.boardVietnam') || 'Việt Nam'}</span>
                       </div>
                       <div 
                         onClick={() => setCreateForm({ ...createForm, boardType: 'WORLD' })}
@@ -385,7 +448,7 @@ export default function Lobby() {
                         style={{ flex: 1, padding: '16px', flexDirection: 'row', justifyContent: 'center' }}
                       >
                         <span style={{ fontSize: '1.5rem' }}>🌎</span>
-                        <span>Thế Giới</span>
+                        <span>{t('lobby.boardWorld') || 'Thế Giới'}</span>
                       </div>
                     </div>
                   </div>

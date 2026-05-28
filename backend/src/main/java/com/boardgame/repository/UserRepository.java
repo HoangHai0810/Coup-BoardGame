@@ -17,6 +17,11 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     boolean existsByEmail(String email);
     List<UserEntity> findByOnlineTrue();
 
+    List<UserEntity> findTop50ByOrderByCoupEloDesc();
+    List<UserEntity> findTop50ByOrderByUnoEloDesc();
+    List<UserEntity> findTop50ByOrderByMonopolyEloDesc();
+    List<UserEntity> findTop50ByOrderByKittensEloDesc();
+
     @Query("SELECT u FROM UserEntity u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%'))")
     List<UserEntity> searchByUsername(@Param("q") String q);
 }

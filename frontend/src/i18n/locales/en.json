@@ -2,7 +2,9 @@
   "nav": {
     "login": "Log in",
     "register": "Register",
-    "logout": "Log out"
+    "logout": "Log out",
+    "leaderboard": "Leaderboard",
+    "lobby": "Lobby"
   },
   "home": {
     "title": "Welcome to BoardRealm",
@@ -54,18 +56,33 @@
     "noRooms": "No active rooms — create the first one!",
     "full": "Full",
     "onlyYouOnline": "Only you are online",
-    "roomName": "Room Name"
+    "roomName": "Room Name",
+    "matchmaking": "Matchmaking",
+    "cancelMatchmaking": "Cancel matchmaking...",
+    "matchFound": "Match found! Entering room...",
+    "gameSelection": "Select Game",
+    "boardVersion": "Board Map Version",
+    "boardVietnam": "Vietnam Map",
+    "boardWorld": "World Map"
   },
   "games": {
     "kittens": "Exploding Kittens",
-    "monopoly": "Monopoly"
+    "monopoly": "Monopoly",
+    "uno": "Uno",
+    "coup": "Coup"
   },
   "room": {
     "title": "Waiting Room: {{code}}",
     "waiting": "Waiting for host to start...",
     "players": "Players in room",
     "start": "Start Game",
-    "leave": "Leave Room"
+    "leave": "Leave Room",
+    "notFound": "Room not found",
+    "dissolved": "Room has been disbanded",
+    "code": "Room Code",
+    "hostBadge": "HOST",
+    "connecting": "Connecting...",
+    "you": "(You)"
   },
   "game": {
     "yourTurn": "Your Turn",
@@ -183,6 +200,49 @@
         "reverse": "The direction of play has been reversed!",
         "draw2": "{{player}} draws 2 cards!",
         "draw4": "{{player}} draws 4 cards!"
+      }
+    },
+    "monopoly": {
+      "rollDice": "Roll Dice",
+      "buyProperty": "Buy Property",
+      "endTurn": "End Turn",
+      "propertyCard": "PROPERTY CARD",
+      "buyPrice": "BUY PRICE: {{price}}K",
+      "status": "Status:",
+      "ownedBy": "Owned by {{username}}",
+      "unowned": "Unowned",
+      "level": "Level:",
+      "hotel": "🏨 Hotel",
+      "houses": "🏠 {{count}} Houses",
+      "emptyLand": "Empty Land",
+      "currentRent": "Current Rent:",
+      "baseRent": "Base Rent:",
+      "with1House": "With 1 House:",
+      "with2Houses": "With 2 Houses:",
+      "with3Houses": "With 3 Houses:",
+      "withHotel": "With Hotel:",
+      "build": "🔨 Build {{type}} ({{price}}K)",
+      "hotelNoun": "Hotel",
+      "houseNoun": "House",
+      "needMonopolyToBuild": "⚠️ Need full color monopoly to start building!",
+      "close": "CLOSE",
+      "players": "Players",
+      "bankrupt": "Bankrupt",
+      "inJail": "In Jail",
+      "bankruptBadge": "Bankrupt",
+      "history": "History",
+      "tabBoard": "Board",
+      "waitingForPlayer": "Waiting for {{username}}...",
+      "special": {
+        "go": "Start",
+        "goPrice": "Collect 2000K",
+        "chance": "Chance",
+        "tax": "Tax",
+        "chest": "Chest",
+        "jail": "Visiting Jail",
+        "freeParking": "Free Parking",
+        "goToJail": "Go To Jail",
+        "specialTax": "Special Tax"
       }
     }
   }

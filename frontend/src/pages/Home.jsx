@@ -72,17 +72,29 @@ export default function Home() {
   };
 
   return (
-    <div className="page">
+    <div className="page" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Animated Background Blobs */}
+      <motion.div 
+        animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'var(--accent-primary)', filter: 'blur(120px)', opacity: 0.2, zIndex: 0, borderRadius: '50%', pointerEvents: 'none' }} 
+      />
+      <motion.div 
+        animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }}
+        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40vw', height: '40vw', background: 'var(--accent-cyan)', filter: 'blur(120px)', opacity: 0.15, zIndex: 0, borderRadius: '50%', pointerEvents: 'none' }} 
+      />
+
       <Navbar />
 
       {/* Hero */}
       <section style={{
-        padding: '80px 0 60px',
+        padding: '120px 0 80px',
         textAlign: 'center',
         position: 'relative',
-        overflow: 'hidden'
+        zIndex: 1
       }}>
-        <div className="container" style={{ position: 'relative' }}>
+        <div className="container">
           <motion.div 
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -96,9 +108,11 @@ export default function Home() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', bounce: 0.5 }}
             className="display-font" style={{
-            fontSize: 'clamp(2.5rem, 6vw, 5rem)',
+            fontSize: 'clamp(3rem, 7vw, 6rem)',
             marginBottom: 24,
-            color: 'var(--accent-primary)',
+            background: 'linear-gradient(135deg, #fff, #a0aec0)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
             lineHeight: 1.1
           }}>
             {t('home.title')}
@@ -145,15 +159,19 @@ export default function Home() {
             {GAMES.map((game, index) => (
               <motion.div 
                 key={game.id} 
-                className="card"
+                className="glass"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}
                 style={{
+                  borderRadius: 'var(--radius-md)',
                   overflow: 'hidden',
                   cursor: game.available ? 'pointer' : 'default',
-                  position: 'relative'
+                  position: 'relative',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  background: 'rgba(20, 25, 35, 0.4)'
                 }}
                 onClick={() => game.available && handlePlayCoup()}
               >

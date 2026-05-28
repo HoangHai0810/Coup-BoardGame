@@ -1,6 +1,7 @@
 package com.boardgame.service;
 
 import com.boardgame.model.kittens.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -9,8 +10,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ExplodingKittensService {
 
+    private final RatingService ratingService;
     private final Map<String, KittensGameState> games = new ConcurrentHashMap<>();
 
     public void removeGame(String roomId) {
@@ -210,6 +213,9 @@ public class ExplodingKittensService {
             state.setPhase(KittensGameState.Phase.GAME_OVER);
             state.setWinnerId(alive.get(0).getId());
             state.addLog("game.logs.winner", Map.of("player", alive.get(0).getUsername()));
+            
+            List<String> allPlayerIds = state.getPlayers().stream().map(KittensPlayer::getId).toList();
+            ratingService.processGameOver("KITTENS", allPlayerIds, alive.get(0).getId());
         }
     }
 }

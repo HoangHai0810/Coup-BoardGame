@@ -38,6 +38,30 @@ public class UserEntity implements Principal {
     private String avatarUrl;
 
 
+    @Column(nullable = false)
+    @Builder.Default
+    private int coupElo = 1000;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int unoElo = 1000;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int monopolyElo = 1000;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int kittensElo = 1000;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int totalMatches = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int totalWins = 0;
+
     private LocalDateTime lastSeen;
 
     @CreationTimestamp

@@ -1,6 +1,7 @@
 package com.boardgame.service;
 
 import com.boardgame.model.uno.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -9,8 +10,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UnoGameService {
 
+    private final RatingService ratingService;
     private final Map<String, UnoGameState> games = new ConcurrentHashMap<>();
 
     public void removeGame(String roomId) {
@@ -124,6 +127,9 @@ public class UnoGameService {
             state.setPhase(UnoGameState.Phase.GAME_OVER);
             state.setWinnerId(player.getId());
             state.addLog("game.logs.winner", Map.of("player", player.getUsername()));
+            
+            List<String> allPlayerIds = state.getPlayers().stream().map(UnoPlayer::getId).toList();
+            ratingService.processGameOver("UNO", allPlayerIds, player.getId());
         } else {
             state.advanceTurn();
         }

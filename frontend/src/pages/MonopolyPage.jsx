@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MonopolyPage() {
@@ -9,8 +10,11 @@ export default function MonopolyPage() {
   const { user } = useAuth();
   const { send, subscribe, connected } = useSocket();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [gameState, setGameState] = useState(null);
+  const [selectedProp, setSelectedProp] = useState(null);
+  const [activeTab, setActiveTab] = useState('board'); // 'board', 'players', 'history'
   const logEndRef = useRef(null);
 
   useEffect(() => {
@@ -28,8 +32,6 @@ export default function MonopolyPage() {
   }, [gameState?.logs]);
 
   if (!gameState) return <div className="page" style={{display:'flex',justifyContent:'center',alignItems:'center'}}><div className="spinner"/></div>;
-
-  const [selectedProp, setSelectedProp] = useState(null);
 
   const isMyTurn = gameState.players[gameState.currentTurnIndex]?.id === user.id;
 
@@ -83,19 +85,22 @@ export default function MonopolyPage() {
     }
   };
 
-  const SPECIAL_TILES = {
-    0: { name: "Bắt Đầu", type: "GO", icon: "🚩", price: "Nhận 2000K" },
-    2: { name: "Cơ Hội", type: "CHANCE", icon: "❓" },
-    4: { name: "Thuế", type: "TAX", price: "2000K", icon: "💸" },
-    7: { name: "Biến Động", type: "CHEST", icon: "📦" },
-    10: { name: "Thăm Tù", type: "JAIL", icon: "👮" },
-    17: { name: "Cơ Hội", type: "CHANCE", icon: "❓" },
-    20: { name: "Bãi Đỗ Xe", type: "FREE_PARKING", icon: "🚗" },
-    22: { name: "Biến Động", type: "CHEST", icon: "📦" },
-    30: { name: "Vô Tù", type: "GO_TO_JAIL", icon: "🚨" },
-    33: { name: "Cơ Hội", type: "CHANCE", icon: "❓" },
-    36: { name: "Biến Động", type: "CHEST", icon: "📦" },
-    38: { name: "Thuế Đặc Biệt", type: "TAX", price: "1000K", icon: "💎" },
+  const getSpecialTile = (index) => {
+    switch (index) {
+      case 0: return { name: t('game.monopoly.special.go'), type: "GO", icon: "🚩", price: t('game.monopoly.special.goPrice') };
+      case 2: return { name: t('game.monopoly.special.chance'), type: "CHANCE", icon: "❓" };
+      case 4: return { name: t('game.monopoly.special.tax'), type: "TAX", price: "2000K", icon: "💸" };
+      case 7: return { name: t('game.monopoly.special.chest'), type: "CHEST", icon: "📦" };
+      case 10: return { name: t('game.monopoly.special.jail'), type: "JAIL", icon: "👮" };
+      case 17: return { name: t('game.monopoly.special.chance'), type: "CHANCE", icon: "❓" };
+      case 20: return { name: t('game.monopoly.special.freeParking'), type: "FREE_PARKING", icon: "🚗" };
+      case 22: return { name: t('game.monopoly.special.chest'), type: "CHEST", icon: "📦" };
+      case 30: return { name: t('game.monopoly.special.goToJail'), type: "GO_TO_JAIL", icon: "🚨" };
+      case 33: return { name: t('game.monopoly.special.chance'), type: "CHANCE", icon: "❓" };
+      case 36: return { name: t('game.monopoly.special.chest'), type: "CHEST", icon: "📦" };
+      case 38: return { name: t('game.monopoly.special.specialTax'), type: "TAX", price: "1000K", icon: "💎" };
+      default: return null;
+    }
   };
 
   const getGridPosition = (index) => {
@@ -107,13 +112,26 @@ export default function MonopolyPage() {
 
   return (
     <div className="monopoly-page">
+      {/* Mobile Tab Bar */}
+      <div className="monopoly-tabs">
+        <div className={`monopoly-tab-btn ${activeTab === 'board' ? 'active' : ''}`} onClick={() => setActiveTab('board')}>
+          🎩 {t('game.monopoly.tabBoard')}
+        </div>
+        <div className={`monopoly-tab-btn ${activeTab === 'players' ? 'active' : ''}`} onClick={() => setActiveTab('players')}>
+          👥 {t('game.monopoly.players')}
+        </div>
+        <div className={`monopoly-tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+          📝 {t('game.monopoly.history')}
+        </div>
+      </div>
+
       {/* LEFT PANEL: Game Board */}
-      <div className="monopoly-main">
+      <div className={`monopoly-main ${activeTab === 'board' ? '' : 'tab-inactive'}`}>
         <div className="monopoly-board">
             {/* 40 Tiles Rendering */}
             {Array.from({length: 40}).map((_, i) => {
                 const prop = gameState.board[i];
-                const special = SPECIAL_TILES[i];
+                const special = getSpecialTile(i);
                 const { gridColumn, gridRow, orientation } = getGridPosition(i);
                 
                 const isCorner = i === 0 || i === 10 || i === 20 || i === 30;
@@ -226,14 +244,14 @@ export default function MonopolyPage() {
                       animate={{ scale: [1, 1.05, 1] }}
                       transition={{ repeat: Infinity, duration: 2 }}
                       style={{ fontSize: '1.4rem', fontWeight: 800, color: '#e53935', background: 'rgba(255,255,255,0.95)', padding: '12px 28px', borderRadius: 30, border: '3px solid #e53935' }}>
-                    🏆 TRÒ CHƠI KẾT THÚC!
+                    🏆 {t('game.gameOver').toUpperCase()}!
                   </motion.div>
                 ) : (
                   <motion.div 
                       animate={{ scale: [1, 1.05, 1] }}
                       transition={{ repeat: Infinity, duration: 2 }}
                       style={{ fontSize: '1.4rem', fontWeight: 800, color: '#333', background: 'rgba(255,255,255,0.8)', padding: '8px 24px', borderRadius: 30, border: '2px solid #333' }}>
-                    {isMyTurn ? '🔥 ĐẾN LƯỢT BẠN!' : `⌛ Đợi ${gameState.players[gameState.currentTurnIndex]?.username}...`}
+                    {isMyTurn ? `🔥 ${t('game.yourTurn').toUpperCase()}!` : t('game.monopoly.waitingForPlayer', { username: gameState.players[gameState.currentTurnIndex]?.username })}
                   </motion.div>
                 )}
             </div>
@@ -284,7 +302,7 @@ export default function MonopolyPage() {
               onClick={handleRoll}
               style={{ padding: '16px 40px', borderRadius: 50, fontSize: '1.1rem', fontWeight: 800 }}
             >
-                🎲 Đổ Xúc Xắc
+                🎲 {t('game.monopoly.rollDice')}
             </button>
             <button 
               className={`btn ${isMyTurn && gameState.phase === 'BUY' ? 'btn-primary' : 'btn-secondary'}`} 
@@ -292,7 +310,7 @@ export default function MonopolyPage() {
               onClick={handleBuy}
               style={{ padding: '16px 40px', borderRadius: 50, fontSize: '1.1rem', fontWeight: 800, background: isMyTurn && gameState.phase === 'BUY' ? '#4CAF50' : undefined }}
             >
-                💰 Mua Đất
+                💰 {t('game.monopoly.buyProperty')}
             </button>
             <button 
               className={`btn ${isMyTurn && (gameState.phase === 'END_TURN' || gameState.phase === 'BUY') ? 'btn-primary' : 'btn-secondary'}`} 
@@ -300,7 +318,7 @@ export default function MonopolyPage() {
               onClick={handleEndTurn}
               style={{ padding: '16px 40px', borderRadius: 50, fontSize: '1.1rem', fontWeight: 800, background: isMyTurn && (gameState.phase === 'END_TURN' || gameState.phase === 'BUY') ? '#FF9800' : undefined }}
             >
-                ⏭ Kết Thúc Lượt
+                ⏭ {t('game.monopoly.endTurn')}
             </button>
         </div>
       </div>
@@ -319,33 +337,38 @@ export default function MonopolyPage() {
                 style={{ width: 340, background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
             >
                 <div style={{ height: 80, background: getColorGroupColor(currentSelectedProp.colorGroup), display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                    <h2 style={{ margin: 0 }}>THẺ TÀI SẢN</h2>
+                    <h2 style={{ margin: 0 }}>{t('game.monopoly.propertyCard')}</h2>
                 </div>
                 <div style={{ padding: 24, textAlign: 'center' }}>
                     <h1 style={{ marginBottom: 8, fontSize: '1.6rem' }}>{currentSelectedProp.name}</h1>
-                    <div style={{ fontSize: '1.2rem', color: '#666', marginBottom: 12 }}>GIÁ MUA: {currentSelectedProp.price}K</div>
+                    <div style={{ fontSize: '1.2rem', color: '#666', marginBottom: 12 }}>{t('game.monopoly.buyPrice', { price: currentSelectedProp.price })}</div>
                     
                     {/* Ownership & Status */}
                     <div style={{ textAlign: 'left', background: '#eceff1', padding: '10px 16px', borderRadius: 12, marginBottom: 12, fontSize: '0.9rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span>Trạng thái:</span> 
+                          <span>{t('game.monopoly.status')}</span> 
                           <strong>
                             {currentSelectedProp.ownerId ? 
-                              `Đã sở hữu bởi ${gameState.players.find(p => p.id === currentSelectedProp.ownerId)?.username || 'Người chơi khác'}` : 
-                              'Chưa sở hữu'
+                              t('game.monopoly.ownedBy', { username: gameState.players.find(p => p.id === currentSelectedProp.ownerId)?.username || 'Người chơi khác' }) : 
+                              t('game.monopoly.unowned')
                             }
                           </strong>
                       </div>
                       {currentSelectedProp.ownerId && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span>Cấp độ:</span> 
+                            <span>{t('game.monopoly.level')}</span> 
                             <strong>
-                              {currentSelectedProp.housesBuilt === 5 ? '🏨 Khách Sạn' : currentSelectedProp.housesBuilt > 0 ? `🏠 ${currentSelectedProp.housesBuilt} Nhà` : 'Đất trống'}
+                              {currentSelectedProp.housesBuilt === 5 ? 
+                                t('game.monopoly.hotel') : 
+                                currentSelectedProp.housesBuilt > 0 ? 
+                                  t('game.monopoly.houses', { count: currentSelectedProp.housesBuilt }) : 
+                                  t('game.monopoly.emptyLand')
+                              }
                             </strong>
                         </div>
                       )}
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span>Tiền thuê hiện tại:</span> 
+                          <span>{t('game.monopoly.currentRent')}</span> 
                           <strong style={{ color: '#e53935' }}>
                             {currentSelectedProp.ownerId ? `${currentSelectedProp.rentPrices[currentSelectedProp.housesBuilt]}K` : '0K'}
                           </strong>
@@ -355,19 +378,19 @@ export default function MonopolyPage() {
                     {/* Rent card details */}
                     <div style={{ textAlign: 'left', background: '#f5f5f5', padding: 16, borderRadius: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-                            <span>Thuê cơ bản:</span> <strong>{currentSelectedProp.rentPrices[0]}K</strong>
+                            <span>{t('game.monopoly.baseRent')}</span> <strong>{currentSelectedProp.rentPrices[0]}K</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-                            <span>Với 1 Nhà:</span> <strong>{currentSelectedProp.rentPrices[1]}K</strong>
+                            <span>{t('game.monopoly.with1House')}</span> <strong>{currentSelectedProp.rentPrices[1]}K</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-                            <span>Với 2 Nhà:</span> <strong>{currentSelectedProp.rentPrices[2]}K</strong>
+                            <span>{t('game.monopoly.with2Houses')}</span> <strong>{currentSelectedProp.rentPrices[2]}K</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-                            <span>Với 3 Nhà:</span> <strong>{currentSelectedProp.rentPrices[3]}K</strong>
+                            <span>{t('game.monopoly.with3Houses')}</span> <strong>{currentSelectedProp.rentPrices[3]}K</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-                            <span>Với Khách Sạn:</span> <strong>{currentSelectedProp.rentPrices[5]}K</strong>
+                            <span>{t('game.monopoly.withHotel')}</span> <strong>{currentSelectedProp.rentPrices[5]}K</strong>
                         </div>
                     </div>
 
@@ -387,16 +410,19 @@ export default function MonopolyPage() {
                             disabled={!isMyTurn || (me?.money || 0) < currentSelectedProp.housePrice}
                             onClick={() => handleBuild(currentSelectedProp.id)}
                         >
-                            🔨 Xây {currentSelectedProp.housesBuilt === 4 ? 'Khách Sạn' : 'Nhà'} ({currentSelectedProp.housePrice}K)
+                            🔨 {t('game.monopoly.build', { 
+                              type: currentSelectedProp.housesBuilt === 4 ? t('game.monopoly.hotelNoun') : t('game.monopoly.houseNoun'), 
+                              price: currentSelectedProp.housePrice 
+                            })}
                         </button>
                       ) : (
                         <div style={{ fontSize: '0.8rem', color: '#ff9800', marginTop: 12, fontStyle: 'italic', fontWeight: '500' }}>
-                            ⚠️ Cần sở hữu đầy đủ nhóm màu để bắt đầu xây dựng!
+                            {t('game.monopoly.needMonopolyToBuild')}
                         </div>
                       )
                     )}
 
-                    <button className="btn btn-secondary" style={{ width: '100%', marginTop: 12, borderRadius: 12 }} onClick={() => setSelectedProp(null)}>ĐÓNG</button>
+                    <button className="btn btn-secondary" style={{ width: '100%', marginTop: 12, borderRadius: 12 }} onClick={() => setSelectedProp(null)}>{t('game.monopoly.close')}</button>
                 </div>
             </motion.div>
           </motion.div>
@@ -404,11 +430,11 @@ export default function MonopolyPage() {
       </AnimatePresence>
 
       {/* RIGHT PANEL: Players & Logs */}
-      <div className="monopoly-sidebar">
+      <div className={`monopoly-sidebar ${activeTab === 'players' || activeTab === 'history' ? '' : 'tab-inactive'} ${activeTab === 'players' ? 'tab-players' : 'tab-history'}`}>
         
         {/* Players List */}
-        <div style={{ padding: 20, borderBottom: '2px solid var(--border)' }}>
-            <h3 style={{ marginBottom: 16 }}>👥 Người Chơi</h3>
+        <div className="monopoly-players-section" style={{ padding: 20, borderBottom: '2px solid var(--border)' }}>
+            <h3 style={{ marginBottom: 16 }}>👥 {t('game.monopoly.players')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {gameState.players.map(p => (
                     <div key={p.id} style={{ 
@@ -419,16 +445,16 @@ export default function MonopolyPage() {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ fontWeight: 800 }}>
-                              {p.username} {p.id === user.id && '(Bạn)'}
+                              {p.username} {p.id === user.id && `(${t('game.you')})`}
                               {p.isAI && <span style={{ marginLeft: 6, fontSize: '0.75rem', background: '#e0e0e0', padding: '2px 6px', borderRadius: 4, color: '#666' }}>AI</span>}
                             </div>
                             <div style={{ color: p.bankrupt ? '#757575' : '#4CAF50', fontWeight: 800 }}>
-                              {p.bankrupt ? 'Đã phá sản' : `$${p.money}k`}
+                              {p.bankrupt ? t('game.monopoly.bankrupt') : `$${p.money}k`}
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                          {p.inJail && <span style={{ background: '#e53935', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 'bold' }}>Ngồi Tù</span>}
-                          {p.bankrupt && <span style={{ background: '#757575', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 'bold' }}>Phá Sản</span>}
+                          {p.inJail && <span style={{ background: '#e53935', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 'bold' }}>{t('game.monopoly.inJail')}</span>}
+                          {p.bankrupt && <span style={{ background: '#757575', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 'bold' }}>{t('game.monopoly.bankruptBadge')}</span>}
                         </div>
 
                         {/* List of properties owned by this player */}
@@ -467,8 +493,8 @@ export default function MonopolyPage() {
         </div>
 
         {/* Logs */}
-        <div style={{ flex: 1, padding: 20, overflowY: 'auto', background: '#f8f9fa' }}>
-            <h3 style={{ marginBottom: 16 }}>📝 Lịch Sử</h3>
+        <div className="monopoly-logs-section" style={{ flex: 1, padding: 20, overflowY: 'auto', background: '#f8f9fa' }}>
+            <h3 style={{ marginBottom: 16 }}>📝 {t('game.monopoly.history')}</h3>
             {gameState.logs.map((log, i) => (
                 <div key={i} style={{ padding: '8px 12px', background: 'white', borderRadius: 8, marginBottom: 8, fontSize: '0.9rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                     {log}

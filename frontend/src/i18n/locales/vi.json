@@ -2,7 +2,9 @@
   "nav": {
     "login": "Đăng nhập",
     "register": "Đăng ký",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "leaderboard": "Xếp hạng",
+    "lobby": "Sảnh chờ"
   },
   "home": {
     "title": "BoardRealm - Thế giới Board Game",
@@ -45,18 +47,32 @@
     "noRooms": "Không có phòng nào đang mở — hãy tạo phòng đầu tiên!",
     "full": "Đã đầy",
     "onlyYouOnline": "Chỉ có bạn đang online",
-    "roomName": "Tên phòng"
+    "roomName": "Tên phòng",
+    "matchmaking": "Ghép trận",
+    "cancelMatchmaking": "Hủy ghép trận...",
+    "matchFound": "Đã tìm thấy trận! Đang vào phòng...",
+    "boardVersion": "Phiên bản Bản Đồ",
+    "boardVietnam": "Việt Nam",
+    "boardWorld": "Thế Giới"
   },
   "games": {
     "kittens": "Mèo nổ",
-    "monopoly": "Cờ Tỉ Phú"
+    "monopoly": "Cờ Tỉ Phú",
+    "uno": "Uno",
+    "coup": "Coup"
   },
   "room": {
     "title": "Phòng: {{code}}",
     "waiting": "Đang đợi chủ phòng bắt đầu...",
-    "players": "Danh sách người chơi",
+    "players": "Người chơi trong phòng",
     "start": "Bắt đầu ngay",
-    "leave": "Rời phòng"
+    "leave": "Rời phòng",
+    "notFound": "Phòng không tồn tại",
+    "dissolved": "Phòng đã bị giải tán",
+    "code": "Mã phòng",
+    "hostBadge": "CHỦ PHÒNG",
+    "connecting": "Đang kết nối...",
+    "you": "(Bạn)"
   },
   "game": {
     "yourTurn": "Lượt của bạn",
@@ -187,6 +203,49 @@
         "reverse": "Vòng chơi bị đảo ngược!",
         "draw2": "{{player}} phải rút thêm 2 lá!",
         "draw4": "{{player}} phải rút thêm 4 lá!"
+      }
+    },
+    "monopoly": {
+      "rollDice": "Đổ Xúc Xắc",
+      "buyProperty": "Mua Đất",
+      "endTurn": "Kết Thúc Lượt",
+      "propertyCard": "THẺ TÀI SẢN",
+      "buyPrice": "GIÁ MUA: {{price}}K",
+      "status": "Trạng thái:",
+      "ownedBy": "Đã sở hữu bởi {{username}}",
+      "unowned": "Chưa sở hữu",
+      "level": "Cấp độ:",
+      "hotel": "🏨 Khách Sạn",
+      "houses": "🏠 {{count}} Nhà",
+      "emptyLand": "Đất trống",
+      "currentRent": "Tiền thuê hiện tại:",
+      "baseRent": "Thuê cơ bản:",
+      "with1House": "Với 1 Nhà:",
+      "with2Houses": "Với 2 Nhà:",
+      "with3Houses": "Với 3 Nhà:",
+      "withHotel": "Với Khách Sạn:",
+      "build": "🔨 Xây {{type}} ({{price}}K)",
+      "hotelNoun": "Khách Sạn",
+      "houseNoun": "Nhà",
+      "needMonopolyToBuild": "⚠️ Cần sở hữu đầy đủ nhóm màu để bắt đầu xây dựng!",
+      "close": "ĐÓNG",
+      "players": "Người Chơi",
+      "bankrupt": "Đã phá sản",
+      "inJail": "Ngồi Tù",
+      "bankruptBadge": "Phá Sản",
+      "history": "Lịch Sử",
+      "tabBoard": "Bàn Cờ",
+      "waitingForPlayer": "Đợi {{username}}...",
+      "special": {
+        "go": "Bắt Đầu",
+        "goPrice": "Nhận 2000K",
+        "chance": "Cơ Hội",
+        "tax": "Thuế",
+        "chest": "Biến Động",
+        "jail": "Thăm Tù",
+        "freeParking": "Bãi Đỗ Xe",
+        "goToJail": "Vô Tù",
+        "specialTax": "Thuế Đặc Biệt"
       }
     }
   }

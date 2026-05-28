@@ -1,12 +1,5 @@
 package com.boardgame.service;
 
-import com.boardgame.entity.*;
-import com.boardgame.service.*;
-import com.boardgame.repository.*;
-import com.boardgame.model.*;
-import com.boardgame.security.*;
-import com.boardgame.config.*;
-
 import com.boardgame.model.*;
 import org.springframework.stereotype.Service;
 
@@ -163,6 +156,7 @@ public class CoupAIService {
                     }
                 }
             }
+            default -> {}
         }
         return new BlockDecision(false, null);
     }

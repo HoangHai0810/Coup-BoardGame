@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Lobby from './pages/Lobby';
+import Leaderboard from './pages/Leaderboard';
 import RoomPage from './pages/RoomPage';
 import CoupGamePage from './pages/CoupGamePage';
 import ExplodingKittensPage from './pages/ExplodingKittensPage';
@@ -26,6 +27,9 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/lobby" element={
         <ProtectedRoute><Lobby /></ProtectedRoute>
+      } />
+      <Route path="/leaderboard" element={
+        <ProtectedRoute><Leaderboard /></ProtectedRoute>
       } />
       <Route path="/room/:roomId" element={
         <ProtectedRoute><RoomPage /></ProtectedRoute>

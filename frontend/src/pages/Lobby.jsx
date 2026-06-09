@@ -9,6 +9,15 @@ import { useSocket } from '../contexts/SocketContext';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const GAME_TYPES = [
+  { type: 'COUP',     icon: '🃏', name: 'Coup',     color: '#7c3aed', defaultMax: 4 },
+  { type: 'KITTENS',  icon: '🙀', name: 'Mèo Nổ',   color: '#ea580c', defaultMax: 5 },
+  { type: 'UNO',      icon: '🌈', name: 'Uno',      color: '#10b981', defaultMax: 6 },
+  { type: 'MONOPOLY', icon: '🎩', name: 'Monopoly', color: '#3b82f6', defaultMax: 4 },
+];
+
+const STATUS_COLORS = { COUP: '#a855f7', KITTENS: '#f97316', UNO: '#34d399', MONOPOLY: '#60a5fa' };
+
 export default function Lobby() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -23,6 +32,7 @@ export default function Lobby() {
   const [showMatchmakingSelect, setShowMatchmakingSelect] = useState(false);
   const [isMatchmaking, setIsMatchmaking] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+  const [filterType, setFilterType] = useState('ALL');
   const { subscribe, send } = useSocket();
 
   useEffect(() => {
@@ -37,78 +47,58 @@ export default function Lobby() {
   }, [subscribe, navigate, t]);
 
   const fetchRooms = async () => {
-    try {
-      const res = await api.get('/rooms');
-      setRooms(res.data);
-    } catch { toast.error(t('lobby.errorLoadRooms') || 'Không thể tải danh sách phòng'); }
+    try { const res = await api.get('/rooms'); setRooms(res.data); }
+    catch { toast.error(t('lobby.errorLoadRooms') || 'Không thể tải danh sách phòng'); }
     finally { setLoading(false); }
   };
 
   const fetchOnlineUsers = async () => {
-    try {
-      const res = await api.get('/users/online');
-      setOnlineUsers(res.data);
-    } catch {}
+    try { const res = await api.get('/users/online'); setOnlineUsers(res.data); } catch {}
   };
 
   useEffect(() => {
-    fetchRooms();
-    fetchOnlineUsers();
-    const interval = setInterval(() => {
-        fetchRooms();
-        fetchOnlineUsers();
-    }, 5000);
+    fetchRooms(); fetchOnlineUsers();
+    const interval = setInterval(() => { fetchRooms(); fetchOnlineUsers(); }, 5000);
     return () => clearInterval(interval);
   }, []);
 
   const handleCreate = async e => {
-    e.preventDefault();
-    setCreating(true);
+    e.preventDefault(); setCreating(true);
     try {
       const res = await api.post('/rooms', {
         name: createForm.name || t('lobby.defaultRoomName', { username: user.username }),
         maxPlayers: parseInt(createForm.maxPlayers),
         aiCount: parseInt(createForm.aiCount),
         gameType: createForm.gameType,
-        boardType: createForm.boardType
+        boardType: createForm.boardType,
       });
-      toast.success(t('lobby.roomCreated'));
-      navigate(`/room/${res.data.id}`);
-    } catch (err) {
-      toast.error(err.response?.data?.error || t('lobby.errorCreateRoom'));
-    } finally { setCreating(false); }
+      toast.success(t('lobby.roomCreated')); navigate(`/room/${res.data.id}`);
+    } catch (err) { toast.error(err.response?.data?.error || t('lobby.errorCreateRoom')); }
+    finally { setCreating(false); }
   };
 
   const handleJoin = async (roomId) => {
-    try {
-      await api.post(`/rooms/${roomId}/join`);
-      navigate(`/room/${roomId}`);
-    } catch (err) {
-      toast.error(err.response?.data?.error || t('lobby.errorJoinRoom'));
-    }
+    try { await api.post(`/rooms/${roomId}/join`); navigate(`/room/${roomId}`); }
+    catch (err) { toast.error(err.response?.data?.error || t('lobby.errorJoinRoom')); }
   };
 
   const handleJoinByCode = async e => {
     e.preventDefault();
     const code = joinCode.trim().toUpperCase();
     if (!code) return;
-    try {
-      await api.post(`/rooms/${code}/join`);
-      navigate(`/room/${code}`);
-    } catch (err) {
-      toast.error(err.response?.data?.error || t('lobby.errorInvalidCode'));
-    }
+    try { await api.post(`/rooms/${code}/join`); navigate(`/room/${code}`); }
+    catch (err) { toast.error(err.response?.data?.error || t('lobby.errorInvalidCode')); }
   };
 
   const handleQuickPlay = async (type) => {
-    setCreating(true);
-    setShowQuickSelect(false);
+    setCreating(true); setShowQuickSelect(false);
     try {
+      const g = GAME_TYPES.find(g => g.type === type);
       const res = await api.post('/rooms', {
         name: t('lobby.quickPlayVsAI', { username: user?.username || '', type }),
-        maxPlayers: type === 'UNO' ? 6 : 4,
-        aiCount: type === 'UNO' ? 5 : 3,
-        gameType: type
+        maxPlayers: g?.defaultMax || 4,
+        aiCount: (g?.defaultMax || 4) - 1,
+        gameType: type,
       });
       navigate(`/room/${res.data.id}`);
     } catch { toast.error(t('lobby.errorCreateGame')); }
@@ -116,105 +106,114 @@ export default function Lobby() {
   };
 
   const joinMatchmaking = (type) => {
-    setShowMatchmakingSelect(false);
-    setIsMatchmaking(true);
+    setShowMatchmakingSelect(false); setIsMatchmaking(true);
     send(`/app/matchmaking/join/${type}`, {});
   };
 
   const cancelMatchmaking = () => {
-    // Cannot know exactly which type we joined without storing it, or just send leave for all
-    ['COUP', 'KITTENS', 'UNO', 'MONOPOLY'].forEach(type => {
-      send(`/app/matchmaking/leave/${type}`, {});
-    });
+    ['COUP','KITTENS','UNO','MONOPOLY'].forEach(t => send(`/app/matchmaking/leave/${t}`, {}));
     setIsMatchmaking(false);
   };
 
+  const filteredRooms = filterType === 'ALL' ? rooms : rooms.filter(r => r.gameType === filterType);
+
   return (
     <div className="page" style={{ background: 'var(--bg-base)' }}>
+      {/* Ambient background glow */}
+      <div style={{ position: 'fixed', top: '10%', left: '5%', width: '40vw', height: '40vw',
+        background: 'var(--accent-primary)', filter: 'blur(160px)', opacity: 0.07,
+        borderRadius: '50%', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', bottom: '5%', right: '5%', width: '35vw', height: '35vw',
+        background: 'var(--accent-cyan)', filter: 'blur(160px)', opacity: 0.05,
+        borderRadius: '50%', pointerEvents: 'none', zIndex: 0 }} />
+
       <Navbar />
 
-      <div className="container" style={{ padding: '48px 24px', flex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, flexWrap: 'wrap', gap: 24 }}>
+      <div className="container" style={{ padding: '40px 24px', flex: 1, position: 'relative', zIndex: 1 }}>
+
+        {/* ─── Header Row ─── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 36, flexWrap: 'wrap', gap: 20 }}>
           <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
-            <h1 className="display-font" style={{ fontSize: '2.5rem', marginBottom: 8, color: 'var(--text-primary)' }}>
+            <div className="badge badge-cyan" style={{ marginBottom: 10, letterSpacing: '1.5px' }}>GAME LOBBY</div>
+            <h1 className="display-font" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', marginBottom: 6 }}>
               🎮 {t('lobby.title')}
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', fontWeight: 700 }}>
+            <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
               {t('lobby.welcome', { name: user?.username })}
             </p>
           </motion.div>
-          
-          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} style={{ display: 'flex', gap: 16, flexWrap: 'wrap', position: 'relative' }}>
-            
-            {/* Find Match Button */}
+
+          <motion.div
+            initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+            style={{ display: 'flex', gap: 12, flexWrap: 'wrap', position: 'relative' }}
+          >
+            {/* Matchmaking */}
             <div style={{ position: 'relative' }}>
               {isMatchmaking ? (
-                <button onClick={cancelMatchmaking} className="btn btn-red" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div>
+                <button onClick={cancelMatchmaking} className="btn btn-danger" style={{ padding: '12px 24px' }}>
+                  <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
                   {t('lobby.cancelMatchmaking') || 'Hủy ghép trận...'}
                 </button>
               ) : (
-                <button onClick={() => setShowMatchmakingSelect(!showMatchmakingSelect)} className="btn btn-gold" style={{ padding: '14px 28px' }}>
+                <button onClick={() => setShowMatchmakingSelect(!showMatchmakingSelect)} className="btn btn-gold" style={{ padding: '12px 24px' }}>
                   ⚔️ {t('lobby.matchmaking') || 'Ghép trận'}
                 </button>
               )}
-              
               <AnimatePresence>
                 {showMatchmakingSelect && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 15, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 15, scale: 0.9 }}
-                    style={{
-                      position: 'absolute', top: '115%', right: 0, background: 'white', 
-                      padding: 16, borderRadius: 24, boxShadow: 'var(--shadow-lg)',
-                      zIndex: 1000, display: 'flex', gap: 12, border: '4px solid var(--accent-gold)',
-                      minWidth: 400
-                    }}
+                  <motion.div
+                    initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.9 }}
+                    className="glass-premium"
+                    style={{ position: 'absolute', top: '115%', right: 0, padding: 16, borderRadius: 20, zIndex: 1000, minWidth: 380, display: 'flex', gap: 10 }}
                   >
-                    <button onClick={() => joinMatchmaking('COUP')} className="btn btn-ghost" style={{ flex: 1 }}>🃏 Coup</button>
-                    <button onClick={() => joinMatchmaking('KITTENS')} className="btn btn-ghost" style={{ flex: 1, color: '#f57c00' }}>🙀 {t('games.kittens') || 'Mèo nổ'}</button>
-                    <button onClick={() => joinMatchmaking('UNO')} className="btn btn-ghost" style={{ flex: 1, color: '#1976d2' }}>🌈 Uno</button>
-                    <button onClick={() => joinMatchmaking('MONOPOLY')} className="btn btn-ghost" style={{ flex: 1, color: '#27ae60' }}>🎩 {t('games.monopoly') || 'Cờ tỷ phú'}</button>
+                    {GAME_TYPES.map(g => (
+                      <button key={g.type} onClick={() => joinMatchmaking(g.type)} className="btn btn-ghost"
+                        style={{ flex: 1, flexDirection: 'column', gap: 4, padding: '10px 8px', borderRadius: 14, fontSize: '0.8rem' }}>
+                        <span style={{ fontSize: '1.5rem' }}>{g.icon}</span>{g.name}
+                      </button>
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            <button onClick={() => setShowQuickSelect(!showQuickSelect)} className="btn btn-blue" disabled={creating} style={{ padding: '14px 28px' }}>
-              ⚡ {t('lobby.quickPlay')}
-            </button>
-            <AnimatePresence>
-              {showQuickSelect && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 15, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 15, scale: 0.9 }}
-                  style={{
-                    position: 'absolute', top: '115%', right: 0, background: 'white', 
-                    padding: 16, borderRadius: 24, boxShadow: 'var(--shadow-lg)',
-                    zIndex: 1000, display: 'flex', gap: 12, border: '4px solid var(--accent-primary)',
-                    minWidth: 420
-                  }}
-                >
-                  <button onClick={() => handleQuickPlay('COUP')} className="btn btn-ghost" style={{ flex: 1 }}>🃏 Coup</button>
-                  <button onClick={() => handleQuickPlay('KITTENS')} className="btn btn-ghost" style={{ flex: 1, color: '#f57c00' }}>🙀 {t('games.kittens') || 'Mèo nổ'}</button>
-                  <button onClick={() => handleQuickPlay('UNO')} className="btn btn-ghost" style={{ flex: 1, color: '#1976d2' }}>🌈 Uno</button>
-                  <button onClick={() => handleQuickPlay('MONOPOLY')} className="btn btn-ghost" style={{ flex: 1, color: '#27ae60' }}>🎩 {t('games.monopoly') || 'Cờ tỷ phú'}</button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <button onClick={() => setShowCreate(true)} className="btn btn-primary" style={{ padding: '14px 28px' }}>
+            {/* Quick Play */}
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowQuickSelect(!showQuickSelect)} className="btn btn-blue" disabled={creating} style={{ padding: '12px 24px' }}>
+                ⚡ {t('lobby.quickPlay')}
+              </button>
+              <AnimatePresence>
+                {showQuickSelect && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.9 }}
+                    className="glass-premium"
+                    style={{ position: 'absolute', top: '115%', right: 0, padding: 16, borderRadius: 20, zIndex: 1000, minWidth: 380, display: 'flex', gap: 10 }}
+                  >
+                    {GAME_TYPES.map(g => (
+                      <button key={g.type} onClick={() => handleQuickPlay(g.type)} className="btn btn-ghost"
+                        style={{ flex: 1, flexDirection: 'column', gap: 4, padding: '10px 8px', borderRadius: 14, fontSize: '0.8rem' }}>
+                        <span style={{ fontSize: '1.5rem' }}>{g.icon}</span>{g.name}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <button onClick={() => setShowCreate(true)} className="btn btn-primary" style={{ padding: '12px 24px' }}>
               ＋ {t('lobby.createRoom')}
             </button>
           </motion.div>
         </div>
 
-        {/* Join by code */}
-        <motion.div 
-          className="glass" 
-          initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          style={{ padding: '24px 32px', marginBottom: 40, borderRadius: 32 }}
+        {/* ─── Join by Code ─── */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
+          className="glass-premium"
+          style={{ padding: '20px 28px', marginBottom: 32, borderRadius: 24 }}
         >
           <form onSubmit={handleJoinByCode} style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 900 }}>
+            <span style={{ color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 800, whiteSpace: 'nowrap' }}>
               🔑 {t('lobby.joinRoom')}:
             </span>
             <input className="input"
@@ -222,246 +221,265 @@ export default function Lobby() {
               value={joinCode}
               onChange={e => setJoinCode(e.target.value.toUpperCase())}
               maxLength={6}
-              style={{ width: 260, textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 900, fontSize: '1.2rem', textAlign: 'center' }}
+              style={{ width: 220, textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, fontSize: '1.1rem', textAlign: 'center', flex: 'none' }}
             />
-            <button type="submit" className="btn btn-green" disabled={joinCode.length !== 6} style={{ padding: '14px 32px' }}>
+            <button type="submit" className="btn btn-green" disabled={joinCode.length !== 6} style={{ padding: '12px 28px', whiteSpace: 'nowrap' }}>
               {t('lobby.joinBtn')} →
             </button>
           </form>
         </motion.div>
 
+        {/* ─── Main layout ─── */}
         <div className="lobby-layout">
-          <div className="main-content">
-            {/* Room list */}
-            <h2 className="display-font" style={{ fontSize: '1.8rem', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-              {t('lobby.publicRooms')}
-              <span className="badge badge-gold" style={{ fontSize: '1.1rem', padding: '6px 16px' }}>
-                {rooms.length}
-              </span>
-            </h2>
+          <div>
+            {/* Filter tabs */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+              <h2 className="display-font" style={{ fontSize: '1.5rem', marginRight: 8 }}>
+                {t('lobby.publicRooms')}
+                <span className="badge badge-gold" style={{ marginLeft: 12, fontSize: '0.85rem', padding: '4px 12px' }}>{filteredRooms.length}</span>
+              </h2>
+              {['ALL', ...GAME_TYPES.map(g => g.type)].map(type => (
+                <button key={type} onClick={() => setFilterType(type)}
+                  style={{
+                    padding: '6px 16px', borderRadius: 99, fontSize: '0.8rem', fontWeight: 700,
+                    border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                    background: filterType === type ? 'var(--accent-primary)' : 'var(--bg-card)',
+                    color: filterType === type ? 'white' : 'var(--text-secondary)',
+                    boxShadow: filterType === type ? 'var(--shadow-glow)' : 'none',
+                  }}>
+                  {type === 'ALL' ? '🌐 All' : GAME_TYPES.find(g => g.type === type)?.icon + ' ' + GAME_TYPES.find(g => g.type === type)?.name}
+                </button>
+              ))}
+            </div>
 
+            {/* Room list */}
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
-                <div className="spinner" style={{ width: 60, height: 60 }} />
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                <div className="spinner" style={{ width: 56, height: 56 }} />
               </div>
-            ) : rooms.length === 0 ? (
-              <motion.div 
-                className="glass" 
+            ) : filteredRooms.length === 0 ? (
+              <motion.div
                 initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                style={{ padding: 80, textAlign: 'center', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 40 }}
+                className="glass-premium"
+                style={{ padding: '80px 40px', textAlign: 'center', borderRadius: 32 }}
               >
                 <div style={{ fontSize: '5rem', marginBottom: 24 }}>🎭</div>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontWeight: 800, fontSize: '1.2rem' }}>
-                  {t('lobby.noRooms') || 'Không có phòng nào đang mở — hãy tạo phòng đầu tiên!'}
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 28, fontWeight: 600, fontSize: '1.1rem' }}>
+                  {t('lobby.noRooms') || 'Không có phòng nào — hãy tạo phòng đầu tiên!'}
                 </p>
-                <button onClick={() => setShowCreate(true)} className="btn btn-primary" style={{ padding: '16px 40px' }}>
+                <button onClick={() => setShowCreate(true)} className="btn btn-primary" style={{ padding: '14px 36px' }}>
                   {t('lobby.createRoom')}
                 </button>
               </motion.div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
-                {rooms.map((room, i) => (
-                  <motion.div 
-                    key={room.id} 
-                    className="glass" 
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    style={{ padding: 32, borderRadius: 32 }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 style={{ fontSize: '1.4rem', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.name}</h3>
-                        <code style={{
-                          fontSize: '0.9rem', color: 'var(--accent-gold)', fontWeight: 900,
-                          background: 'rgba(243, 156, 18, 0.1)', padding: '6px 14px', borderRadius: 12, border: '1px solid rgba(243, 156, 18, 0.3)'
-                        }}>
-                          #{room.id}
-                        </code>
-                      </div>
-                      <span className="badge badge-blue" style={{ height: 'fit-content', fontSize: '0.8rem' }}>{room.gameType}</span>
-                    </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+                <AnimatePresence>
+                  {filteredRooms.map((room, i) => {
+                    const g = GAME_TYPES.find(g => g.type === room.gameType) || GAME_TYPES[0];
+                    const isFull = room.players.length >= room.maxPlayers - room.aiCount;
+                    return (
+                      <motion.div
+                        key={room.id}
+                        layout
+                        initial={{ opacity: 0, y: 24, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ delay: i * 0.06 }}
+                        whileHover={{ y: -6, scale: 1.01 }}
+                        className="glass-premium"
+                        style={{ padding: 24, borderRadius: 24, overflow: 'hidden', position: 'relative', cursor: 'default' }}
+                      >
+                        {/* Game color accent top bar */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                          background: `linear-gradient(90deg, transparent, ${g.color}, transparent)` }} />
 
-                    <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-                      <span style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 800, background: 'rgba(255,255,255,0.1)', padding: '6px 14px', borderRadius: 99 }}>
-                        👥 {room.players.length} / {room.maxPlayers}
-                      </span>
-                      {room.aiCount > 0 && (
-                        <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 800, background: 'rgba(255,255,255,0.05)', padding: '6px 14px', borderRadius: 99 }}>
-                          🤖 {room.aiCount} AI
-                        </span>
-                      )}
-                    </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                              <span style={{ fontSize: '1.6rem' }}>{g.icon}</span>
+                              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {room.name}
+                              </h3>
+                            </div>
+                            <code style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', fontWeight: 900, fontFamily: 'var(--font-mono)',
+                              background: 'rgba(245,158,11,0.1)', padding: '3px 10px', borderRadius: 8, border: '1px solid rgba(245,158,11,0.2)' }}>
+                              #{room.id}
+                            </code>
+                          </div>
+                          <span className="badge" style={{ background: `${g.color}20`, color: g.color, border: `1px solid ${g.color}40`, flexShrink: 0 }}>
+                            {room.gameType}
+                          </span>
+                        </div>
 
-                    {/* Player avatars */}
-                    <div style={{ display: 'flex', gap: -12, marginBottom: 32, flexWrap: 'wrap', paddingLeft: 12 }}>
-                      {room.players.map((p, idx) => (
-                        <img key={p.id} src={p.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${p.username}`}
-                          alt={p.username} title={p.username}
-                          style={{ 
-                            width: 44, height: 44, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', 
-                            marginLeft: -12, zIndex: room.players.length - idx, boxShadow: '0 4px 8px rgba(0,0,0,0.1)' 
-                          }}
-                        />
-                      ))}
-                    </div>
+                        {/* Players row */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                          <div style={{ display: 'flex' }}>
+                            {room.players.slice(0, 5).map((p, idx) => (
+                              <img key={p.id} src={p.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${p.username}`}
+                                alt={p.username} title={p.username}
+                                style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--bg-base)',
+                                  marginLeft: idx > 0 ? -8 : 0, zIndex: room.players.length - idx, objectFit: 'cover' }}
+                              />
+                            ))}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: isFull ? 'var(--accent-red)' : 'var(--text-secondary)' }}>
+                              👥 {room.players.length} / {room.maxPlayers}
+                              {room.aiCount > 0 && <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>+ {room.aiCount} 🤖</span>}
+                            </div>
+                            {/* Player bar */}
+                            <div style={{ height: 4, background: 'var(--border)', borderRadius: 99, marginTop: 6, overflow: 'hidden' }}>
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(room.players.length / room.maxPlayers) * 100}%` }}
+                                transition={{ delay: i * 0.06 + 0.3, duration: 0.6 }}
+                                style={{ height: '100%', background: isFull ? 'var(--accent-red)' : `${g.color}`, borderRadius: 99 }}
+                              />
+                            </div>
+                          </div>
+                        </div>
 
-                    <button
-                      className="btn btn-primary"
-                      style={{ width: '100%', padding: '16px' }}
-                      onClick={() => handleJoin(room.id)}
-                      disabled={room.players.length >= room.maxPlayers - room.aiCount}
-                    >
-                      {room.players.length >= room.maxPlayers - room.aiCount ? (t('lobby.full') || 'Đã đầy') : `${t('lobby.joinBtn')} →`}
-                    </button>
-                  </motion.div>
-                ))}
+                        <button
+                          className={isFull ? 'btn btn-ghost' : 'btn btn-primary'}
+                          style={{ width: '100%', padding: '11px', fontSize: '0.9rem', borderRadius: 14,
+                            ...(isFull ? { opacity: 0.6, cursor: 'not-allowed' } : {}) }}
+                          onClick={() => !isFull && handleJoin(room.id)}
+                          disabled={isFull}
+                        >
+                          {isFull ? (t('lobby.full') || '🚫 Phòng Đầy') : `${t('lobby.joinBtn')} →`}
+                        </button>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
             )}
           </div>
 
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          {/* ─── Sidebar ─── */}
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <ChatBox roomId="global" />
-            
-            <div className="glass" style={{ padding: 32, borderRadius: 32 }}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, color: 'var(--accent-blue)' }}>
+
+            {/* Online Players */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
+              className="hud-panel"
+              style={{ borderRadius: 24 }}
+            >
+              <div className="hud-panel-header">
                 <span className="online-dot" /> {t('lobby.onlinePlayers')}
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <span className="badge badge-green" style={{ marginLeft: 'auto', fontSize: '0.72rem' }}>{onlineUsers.length}</span>
+              </div>
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
                 {onlineUsers.length === 0 ? (
-                  <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '8px 0' }}>
                     {t('lobby.onlyYouOnline') || 'Chỉ có bạn đang online'}
                   </p>
-                ) : (
-                  onlineUsers.map(u => (
-                    <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 16, background: u.id === user?.id ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
-                      <img src={u.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${u.username}`} 
-                        alt={u.username} 
-                        style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid ' + (u.id === user?.id ? 'var(--accent-primary)' : 'rgba(255,255,255,0.2)') }} 
+                ) : onlineUsers.map((u, i) => (
+                  <motion.div
+                    key={u.id}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 12,
+                      background: u.id === user?.id ? 'rgba(139,92,246,0.08)' : 'transparent',
+                      border: u.id === user?.id ? '1px solid rgba(139,92,246,0.15)' : '1px solid transparent' }}
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <img src={u.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${u.username}`}
+                        alt={u.username}
+                        style={{ width: 34, height: 34, borderRadius: '50%', border: `2px solid ${u.id === user?.id ? 'var(--accent-primary-light)' : 'var(--border)'}` }}
                       />
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '1rem', fontWeight: 800 }}>{u.username}</span>
-                        {u.id === user?.id && <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 900 }}>{t('game.you')}</span>}
-                      </div>
+                      <span className="online-dot" style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, border: '1.5px solid var(--bg-base)' }} />
                     </div>
-                  ))
-                )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.username}</div>
+                      {u.id === user?.id && <div style={{ fontSize: '0.72rem', color: 'var(--accent-primary-light)', fontWeight: 800 }}>YOU</div>}
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-            </div>
+            </motion.div>
           </aside>
         </div>
       </div>
 
-      {/* Create Room Modal */}
+      {/* ─── Create Room Modal ─── */}
       <AnimatePresence>
         {showCreate && (
-          <motion.div 
-            className="modal-overlay" 
-            onClick={() => setShowCreate(false)}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            <motion.div 
-              className="modal" 
-              onClick={e => e.stopPropagation()}
-              initial={{ scale: 0.9, y: 30, opacity: 0 }}
+          <motion.div className="modal-overlay" onClick={() => setShowCreate(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="modal" onClick={e => e.stopPropagation()}
+              initial={{ scale: 0.88, y: 40, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 30, opacity: 0 }}
-              style={{ padding: 48, maxWidth: 650, borderRadius: 40 }}
+              exit={{ scale: 0.88, y: 40, opacity: 0 }}
+              style={{ maxWidth: 600, padding: 48 }}
             >
-              <h2 className="display-font" style={{ marginBottom: 12, fontSize: '2.2rem' }}>✨ {t('lobby.createRoom')}</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 40, fontWeight: 700, fontSize: '1.1rem' }}>
-                {t('lobby.roomConfig')}
-              </p>
+              <h2 className="display-font" style={{ marginBottom: 8, fontSize: '2rem' }}>✨ {t('lobby.createRoom')}</h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: 36, fontSize: '0.95rem' }}>{t('lobby.roomConfig')}</p>
 
               <form onSubmit={handleCreate}>
-                <div className="form-group" style={{ marginBottom: 32 }}>
-                  <label style={{ fontSize: '1.1rem' }}>📝 {t('lobby.roomName') || 'Tên phòng'}</label>
-                  <input className="input"
-                    placeholder={t('lobby.defaultRoomName', { username: user.username })}
-                    value={createForm.name}
-                    onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
-                    maxLength={100}
-                    style={{ fontSize: '1.1rem', padding: '18px 24px' }}
-                  />
+                <div className="form-group" style={{ marginBottom: 28 }}>
+                  <label>📝 {t('lobby.roomName') || 'Tên phòng'}</label>
+                  <input className="input" placeholder={t('lobby.defaultRoomName', { username: user.username })}
+                    value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
+                    maxLength={100} style={{ borderRadius: 14 }} />
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 32 }}>
-                  <label style={{ fontSize: '1.1rem' }}>🎮 {t('lobby.gameSelection')}</label>
+                <div className="form-group" style={{ marginBottom: 28 }}>
+                  <label>🎮 {t('lobby.gameSelection')}</label>
                   <div className="game-select-grid">
-                    {[
-                      { type: 'COUP', icon: '🃏', name: 'Coup' },
-                      { type: 'KITTENS', icon: '🙀', name: t('games.kittens') || 'Mèo nổ', players: 5 },
-                      { type: 'UNO', icon: '🌈', name: 'Uno', players: 10 },
-                      { type: 'MONOPOLY', icon: '🎩', name: t('games.monopoly') || 'Cờ Tỉ Phú', players: 4 }
-                    ].map(g => (
+                    {GAME_TYPES.map(g => (
                       <div key={g.type}
-                        onClick={() => setCreateForm({ ...createForm, gameType: g.type, maxPlayers: g.players || createForm.maxPlayers })}
+                        onClick={() => setCreateForm({ ...createForm, gameType: g.type, maxPlayers: g.defaultMax })}
                         className={`game-card-select ${createForm.gameType === g.type ? 'active' : ''}`}
-                        style={{ padding: '20px 10px', height: 110 }}
+                        style={{ padding: '18px 10px', height: 100 }}
                       >
-                        <span style={{ fontSize: '2rem' }}>{g.icon}</span>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 900 }}>{g.name}</span>
+                        <span style={{ fontSize: '1.8rem' }}>{g.icon}</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>{g.name}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 40 }}>
-                  <div className="form-group" style={{ flex: 1, minWidth: 150, marginBottom: 0 }}>
+                <div style={{ display: 'flex', gap: 20, marginBottom: 28 }}>
+                  <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                     <label>👥 {t('lobby.maxPlayers')}</label>
-                      <select className="input"
-                        value={createForm.maxPlayers}
-                        style={{ padding: '16px 24px' }}
-                        onChange={e => setCreateForm(f => ({ ...f, maxPlayers: e.target.value }))}>
-                        {[2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
+                    <select className="input" value={createForm.maxPlayers} style={{ borderRadius: 14 }}
+                      onChange={e => setCreateForm(f => ({ ...f, maxPlayers: e.target.value }))}>
+                      {[2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
                   </div>
-
-                  <div className="form-group" style={{ flex: 1, minWidth: 150, marginBottom: 0 }}>
+                  <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                     <label>🤖 {t('lobby.aiBots')}</label>
-                    <select className="input"
-                      value={createForm.aiCount}
-                      style={{ padding: '16px 24px' }}
+                    <select className="input" value={createForm.aiCount} style={{ borderRadius: 14 }}
                       onChange={e => setCreateForm(f => ({ ...f, aiCount: e.target.value }))}>
-                      {[0,1,2,3,4,5].filter(n => n < createForm.maxPlayers).map(n =>
-                        <option key={n} value={n}>{n}</option>
-                      )}
+                      {[0,1,2,3,4,5].filter(n => n < createForm.maxPlayers).map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                 </div>
 
                 {createForm.gameType === 'MONOPOLY' && (
-                  <div className="form-group" style={{ marginBottom: 40 }}>
-                    <label>🌍 {t('lobby.boardVersion') || 'Phiên bản Bản Đồ'}</label>
-                    <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
-                      <div 
-                        onClick={() => setCreateForm({ ...createForm, boardType: 'VIETNAM' })}
-                        className={`game-card-select ${createForm.boardType === 'VIETNAM' ? 'active' : ''}`}
-                        style={{ flex: 1, padding: '16px', flexDirection: 'row', justifyContent: 'center' }}
-                      >
-                        <span style={{ fontSize: '1.5rem' }}>🇻🇳</span>
-                        <span>{t('lobby.boardVietnam') || 'Việt Nam'}</span>
-                      </div>
-                      <div 
-                        onClick={() => setCreateForm({ ...createForm, boardType: 'WORLD' })}
-                        className={`game-card-select ${createForm.boardType === 'WORLD' ? 'active' : ''}`}
-                        style={{ flex: 1, padding: '16px', flexDirection: 'row', justifyContent: 'center' }}
-                      >
-                        <span style={{ fontSize: '1.5rem' }}>🌎</span>
-                        <span>{t('lobby.boardWorld') || 'Thế Giới'}</span>
-                      </div>
+                  <div className="form-group" style={{ marginBottom: 28 }}>
+                    <label>🌍 {t('lobby.boardVersion') || 'Phiên bản bản đồ'}</label>
+                    <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                      {[{ type: 'VIETNAM', icon: '🇻🇳', name: 'Việt Nam' }, { type: 'WORLD', icon: '🌎', name: 'Thế Giới' }].map(b => (
+                        <div key={b.type} onClick={() => setCreateForm({ ...createForm, boardType: b.type })}
+                          className={`game-card-select ${createForm.boardType === b.type ? 'active' : ''}`}
+                          style={{ flex: 1, padding: 16, flexDirection: 'row', gap: 10 }}>
+                          <span style={{ fontSize: '1.4rem' }}>{b.icon}</span>
+                          <span style={{ fontWeight: 800 }}>{b.name}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 20, marginTop: 40 }}>
-                  <button type="button" className="btn btn-ghost"
-                    style={{ flex: 1, padding: '18px' }} onClick={() => setShowCreate(false)}>
+                <div style={{ display: 'flex', gap: 14 }}>
+                  <button type="button" className="btn btn-ghost" style={{ flex: 1, padding: '14px' }} onClick={() => setShowCreate(false)}>
                     {t('lobby.cancel')}
                   </button>
-                  <button type="submit" className="btn btn-primary"
-                    style={{ flex: 2, padding: '18px', fontSize: '1.2rem' }} disabled={creating}>
-                    {creating ? '...' : t('lobby.createBtn')}
+                  <button type="submit" className="btn btn-primary" style={{ flex: 2, padding: '14px', fontSize: '1rem' }} disabled={creating}>
+                    {creating ? '⏳ Creating...' : `✨ ${t('lobby.createBtn')}`}
                   </button>
                 </div>
               </form>
@@ -469,6 +487,54 @@ export default function Lobby() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ─── Matchmaking overlay ─── */}
+      <AnimatePresence>
+        {isMatchmaking && (
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ zIndex: 10000 }}>
+            <motion.div className="hud-panel"
+              initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }}
+              style={{ padding: 48, width: '100%', maxWidth: 420, textAlign: 'center', background: 'rgba(6,8,16,0.95)' }}
+            >
+              {/* Radar */}
+              <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto 32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {[1, 1.4, 1.8].map((scale, i) => (
+                  <div key={i} style={{
+                    position: 'absolute', inset: 0, borderRadius: '50%',
+                    border: `2px solid var(--accent-${i === 0 ? 'cyan' : i === 1 ? 'primary-light' : 'pink'})`,
+                    animation: 'pulse-radar 2s linear infinite',
+                    animationDelay: `${i * 0.6}s`, opacity: 0.5 - i * 0.1,
+                  }} />
+                ))}
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  style={{ position: 'absolute', inset: 0, borderRadius: '50%',
+                    background: 'conic-gradient(from 0deg, transparent 70%, rgba(139,92,246,0.4) 100%)', }}
+                />
+                <span style={{ fontSize: '3rem', zIndex: 2 }}>⚔️</span>
+              </div>
+
+              <h2 className="display-font text-shimmer-glow" style={{ fontSize: '1.8rem', marginBottom: 10 }}>
+                {t('lobby.searchingMatch') || 'Đang Tìm Trận Đấu'}
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontSize: '0.9rem', lineHeight: 1.7 }}>
+                {t('lobby.searchingDesc') || 'Đang tìm kiếm đối thủ xứng tầm trong vùng đất BoardRealm...'}
+              </p>
+              <button onClick={cancelMatchmaking} className="btn btn-danger" style={{ width: '100%', padding: '14px' }}>
+                ✕ {t('lobby.cancelMatchmaking') || 'Hủy tìm trận'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style>{`
+        @keyframes pulse-radar {
+          0% { transform: scale(0.8); opacity: 0.8; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -47,18 +47,33 @@ const CAT_POSITIONS = {
 };
 
 const CARD_COLORS = {
-  EXPLODING_KITTEN: '#212121',
-  DEFUSE: '#2ecc71',
-  ATTACK: '#e74c3c',
-  SKIP: '#3498db',
-  FAVOR: '#9b59b6',
-  SHUFFLE: '#f1c40f',
-  SEE_THE_FUTURE: '#1abc9c',
-  NOPE: '#34495e',
-  CAT_BEARD: '#7f8c8d',
-  CAT_TACO: '#e67e22',
-  CAT_RAINBOW: '#fd79a8',
-  CAT_MELON: '#27ae60'
+  EXPLODING_KITTEN: '#ef4444',
+  DEFUSE: '#10b981',
+  ATTACK: '#f97316',
+  SKIP: '#3b82f6',
+  FAVOR: '#a855f7',
+  SHUFFLE: '#eab308',
+  SEE_THE_FUTURE: '#06b6d4',
+  NOPE: '#dc2626',
+  CAT_BEARD: '#64748b',
+  CAT_TACO: '#d97706',
+  CAT_RAINBOW: '#ec4899',
+  CAT_MELON: '#22c55e'
+};
+
+const CARD_GLOWS = {
+  EXPLODING_KITTEN: 'rgba(239,68,68,0.5)',
+  DEFUSE: 'rgba(16,185,129,0.5)',
+  ATTACK: 'rgba(249,115,22,0.4)',
+  SKIP: 'rgba(59,130,246,0.4)',
+  FAVOR: 'rgba(168,85,247,0.4)',
+  SHUFFLE: 'rgba(234,179,8,0.4)',
+  SEE_THE_FUTURE: 'rgba(6,182,212,0.4)',
+  NOPE: 'rgba(220,38,38,0.4)',
+  CAT_BEARD: 'rgba(100,116,139,0.2)',
+  CAT_TACO: 'rgba(217,119,6,0.2)',
+  CAT_RAINBOW: 'rgba(236,72,153,0.3)',
+  CAT_MELON: 'rgba(34,197,94,0.2)'
 };
 
 export default function ExplodingKittensPage() {
@@ -95,8 +110,12 @@ export default function ExplodingKittensPage() {
   }, [gameState?.actionLog]);
 
   if (!gameState) return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-      <div className="spinner" />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, background: 'var(--bg-base)' }}>
+      <motion.div 
+        animate={{ rotate: 360 }}
+        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+        style={{ width: 50, height: 50, border: '4px solid rgba(139,92,246,0.1)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%' }}
+      />
       <p style={{ fontWeight: 800, color: 'var(--text-secondary)' }}>{t('game.loadingKittens', 'Đang tải mèo nổ...')}</p>
     </div>
   );
@@ -170,38 +189,68 @@ export default function ExplodingKittensPage() {
   return (
     <div className="page" style={{ 
       height: '100vh', display: 'flex', flexDirection: 'column', 
-      background: 'linear-gradient(135deg, #2c3e50 0%, #000000 100%)',
+      background: 'linear-gradient(135deg, #150808 0%, #060810 100%)',
       overflow: 'hidden', position: 'relative'
     }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("/assets/kittens_bg.png")', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.15, pointerEvents: 'none' }} />
+      {/* Background glow effects */}
+      <div style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '400px', background: isMyTurn ? 'var(--accent-red)' : 'transparent', opacity: 0.05, filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none', transition: 'all 0.5s ease' }} />
+
       <Navbar />
 
-      <div className="game-board-container">
+      <div className="game-board-container" style={{ position: 'relative', zIndex: 2 }}>
         
         {/* Opponents Row */}
-        <div className="opponents-row" style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
-          {others.map(p => (
-            <motion.div key={p.id} 
-              initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-              className={`player-seat ${gameState.currentPlayerId === p.id ? 'active-turn' : ''} ${p.exploded ? 'eliminated' : ''}`}
-              onClick={() => handleTarget(p.id)}
-              style={{ 
-                cursor: targetAction ? 'pointer' : 'default',
-                width: 160, minHeight: 180, background: 'rgba(255,255,255,0.9)',
-                border: targetAction ? '4px solid var(--accent-red)' : (gameState.currentPlayerId === p.id ? '4px solid var(--accent-gold)' : 'none')
-              }}
-            >
-              <div style={{ position: 'relative' }}>
-                <img src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`} alt={p.username} className="player-avatar" style={{ width: 64, height: 64 }} />
-                {p.exploded && <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,0,0,0.4)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>💥</div>}
-              </div>
-              <div style={{ textAlign: 'center', marginTop: 8 }}>
-                <div style={{ fontWeight: 900, fontSize: '1rem' }}>{p.username}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 800 }}>🎴 {p.handCount} {t('game.kittens.cardsTitle')}</div>
-              </div>
-              {p.exploded && <span className="badge badge-red" style={{ marginTop: 8 }}>ELIMINATED</span>}
-            </motion.div>
-          ))}
+        <div className="opponents-row" style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
+          {others.map(p => {
+            const isCurrentTurn = gameState.currentPlayerId === p.id;
+            return (
+              <motion.div key={p.id} 
+                initial={{ y: -30, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }}
+                whileHover={targetAction ? { scale: 1.05, boxShadow: '0 0 25px rgba(239,68,68,0.5)' } : {}}
+                className={`player-seat glass ${isCurrentTurn ? 'active-turn' : ''} ${p.exploded ? 'eliminated' : ''}`}
+                onClick={() => handleTarget(p.id)}
+                style={{ 
+                  cursor: targetAction ? 'pointer' : 'default',
+                  width: 150, 
+                  minHeight: 160, 
+                  background: isCurrentTurn ? 'rgba(245,158,11,0.03)' : 'var(--bg-card)',
+                  border: targetAction ? '3px solid var(--accent-red)' : (isCurrentTurn ? '2px solid var(--accent-gold)' : '1px solid var(--border)'),
+                  boxShadow: isCurrentTurn ? 'var(--shadow-glow-gold)' : 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  padding: 16,
+                  borderRadius: 24,
+                  position: 'relative'
+                }}
+              >
+                {isCurrentTurn && (
+                  <div style={{ position: 'absolute', top: 6, right: 8, fontSize: '0.6rem', color: 'var(--accent-gold)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent-gold)', animation: 'pulse-radar 1s infinite' }} />
+                    LƯỢT
+                  </div>
+                )}
+
+                <div style={{ position: 'relative' }}>
+                  <img 
+                    src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`} 
+                    alt={p.username} 
+                    className="player-avatar" 
+                    style={{ width: 50, height: 50, border: isCurrentTurn ? '2px solid var(--accent-gold)' : '2px solid var(--border)' }} 
+                  />
+                  {p.exploded && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(239,68,68,0.4)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>💥</div>
+                  )}
+                </div>
+                <div style={{ textAlign: 'center', marginTop: 8, width: '100%' }}>
+                  <div style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.username}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 800, marginTop: 2 }}>🎴 {p.handCount} {t('game.kittens.cardsTitle', 'lá')}</div>
+                </div>
+                {p.exploded && <span className="badge badge-red" style={{ marginTop: 8, padding: '2px 8px', fontSize: '0.55rem' }}>BỊ LOẠI</span>}
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Board Center */}
@@ -213,37 +262,59 @@ export default function ExplodingKittensPage() {
             isActive={gameState.phase !== 'GAME_OVER'}
           />
           
-          <div style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 48, alignItems: 'center' }}>
             {/* Draw Pile */}
             <motion.div 
-              whileHover={{ scale: isMyTurn ? 1.05 : 1 }}
+              whileHover={isMyTurn ? { scale: 1.05, y: -4, boxShadow: 'var(--shadow-glow-gold)' } : {}}
+              whileActive={isMyTurn ? { scale: 0.98 } : {}}
               className={`pile ${isMyTurn ? 'pulse-gold' : ''}`} 
               onClick={handleDraw}
               style={{ 
-                width: 130, height: 190, background: '#1a1a1a', border: '4px solid white', borderRadius: 16,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                cursor: isMyTurn ? 'pointer' : 'default', position: 'relative', boxShadow: '0 10px 20px rgba(0,0,0,0.3)'
+                width: 120, 
+                height: 175, 
+                background: '#1a0c0c', 
+                border: isMyTurn ? '4px solid var(--accent-gold)' : '4px solid white', 
+                borderRadius: 20,
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                cursor: isMyTurn ? 'pointer' : 'default', 
+                position: 'relative', 
+                boxShadow: 'var(--shadow-lg)'
               }}
             >
-              <div style={{ fontWeight: 900, color: 'white', transform: 'rotate(-90deg)', fontSize: '1.4rem', letterSpacing: 4 }}>KITTENS</div>
-              <div style={{ position: 'absolute', bottom: -40, width: '100%', textAlign: 'center', color: 'white', fontWeight: 900, fontSize: '1.2rem' }}>
+              <div style={{ fontWeight: 900, color: 'white', transform: 'rotate(-90deg)', fontSize: '1.25rem', letterSpacing: 4 }}>KITTENS</div>
+              <div style={{ position: 'absolute', bottom: -38, width: '100%', textAlign: 'center', color: 'var(--text-primary)', fontWeight: 900, fontSize: '1.2rem' }}>
                 {gameState.drawPileCount}
               </div>
-              {isMyTurn && <div style={{ position: 'absolute', top: -30, background: 'var(--accent-gold)', color: 'black', padding: '4px 12px', borderRadius: 10, fontSize: '0.8rem', fontWeight: 900 }}>RÚT BÀI</div>}
+              {isMyTurn && (
+                <div style={{ position: 'absolute', top: -45, background: 'var(--accent-gold)', color: 'black', padding: '6px 16px', borderRadius: 10, fontSize: '0.75rem', fontWeight: 900, boxShadow: '0 4px 10px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+                  👆 RÚT BÀI
+                </div>
+              )}
             </motion.div>
 
             {/* Discard Pile */}
-            <div style={{ width: 130, height: 190, borderRadius: 16, border: '4px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <div style={{ width: 120, height: 175, borderRadius: 20, border: '3px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               <AnimatePresence mode="wait">
                 {gameState.discardTop ? (
                   <motion.div 
                     key={gameState.discardTop}
-                    initial={{ scale: 0.5, opacity: 0, rotate: 15 }}
+                    initial={{ scale: 0.6, opacity: 0, rotate: 12 }}
                     animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                    exit={{ scale: 0.6, opacity: 0 }}
                     className="kittens-card"
                     style={{ 
-                      width: '100%', height: '100%', background: CARD_COLORS[gameState.discardTop], 
-                      margin: 0, border: '4px solid white', position: 'absolute'
+                      width: '100%', 
+                      height: '100%', 
+                      background: CARD_COLORS[gameState.discardTop] || 'var(--bg-card)', 
+                      margin: 0, 
+                      border: '4px solid white', 
+                      position: 'absolute',
+                      borderRadius: 18,
+                      overflow: 'hidden',
+                      boxShadow: `0 8px 24px ${CARD_GLOWS[gameState.discardTop] || 'transparent'}`
                     }}
                   >
                     <div className="card-art-container" style={{ background: 'rgba(0,0,0,0.1)' }}>
@@ -253,7 +324,9 @@ export default function ExplodingKittensPage() {
                         backgroundPosition: CAT_POSITIONS[gameState.discardTop] || 'center'
                       }} />
                     </div>
-                    <div className="card-label" style={{ fontSize: '0.6rem', padding: '4px 0', fontWeight: 900 }}>{t(`game.kittens.cards.${gameState.discardTop}`)}</div>
+                    <div className="card-label" style={{ fontSize: '0.65rem', padding: '5px 0', fontWeight: 900, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.4)' }}>
+                      {CARD_EMOJIS[gameState.discardTop]} {t(`game.kittens.cards.${gameState.discardTop}`)}
+                    </div>
                   </motion.div>
                 ) : null}
               </AnimatePresence>
@@ -262,13 +335,18 @@ export default function ExplodingKittensPage() {
 
           <div className="kittens-sidebar">
             {/* Action Log Floating */}
-            <div className="card" style={{ 
-              maxHeight: 350, background: 'rgba(255,255,255,0.95)', 
-              backdropFilter: 'blur(10px)', borderRadius: 24, padding: 20,
-              display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-xl)'
+            <div className="card glass" style={{ 
+              maxHeight: 280, 
+              background: 'var(--bg-card)', 
+              borderRadius: 32, 
+              padding: 20,
+              display: 'flex', 
+              flexDirection: 'column', 
+              boxShadow: 'var(--shadow-sm)',
+              border: '1px solid var(--border)'
             }}>
-              <h4 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>📜 {t('game.actionLog')}</h4>
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.95rem', fontWeight: 800 }}>📜 {t('game.actionLog', 'LỊCH SỬ')}</h4>
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
                 {gameState.actionLog.slice(-15).map((log, i) => {
                   const translationKey = log.key.startsWith('game.logs.')
                     ? log.key
@@ -279,8 +357,13 @@ export default function ExplodingKittensPage() {
                   });
                   return (
                     <div key={i} style={{ 
-                      padding: '8px 12px', background: '#f0f4f8', borderRadius: 10, 
-                      fontSize: '0.85rem', fontWeight: 700, borderLeft: '4px solid var(--accent-primary)' 
+                      padding: '8px 12px', 
+                      background: 'var(--bg-input)', 
+                      borderRadius: 10, 
+                      fontSize: '0.78rem', 
+                      fontWeight: 700, 
+                      borderLeft: '4px solid var(--accent-red)',
+                      color: 'var(--text-secondary)'
                     }}>
                       {text}
                     </div>
@@ -298,106 +381,170 @@ export default function ExplodingKittensPage() {
         {/* Modals for Action Responses */}
         <AnimatePresence>
           {gameState.phase === 'EXPLODING' && isMyTurn && (
-            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="defuse-modal" style={{ borderRadius: 40, padding: 48 }}>
-              <div style={{ fontSize: '4rem', marginBottom: 16 }}>🙀</div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-red)' }}>{t('game.kittens.logs.exploded', { player: 'BẠN' })}</h2>
-              <p style={{ fontWeight: 800, marginBottom: 32 }}>Sử dụng Gỡ Bom để quay lại cuộc chơi!</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                <button onClick={() => handleDefuse(0)} className="btn btn-primary" style={{ padding: '16px' }}>Đầu bộ bài</button>
-                <button onClick={() => handleDefuse(Math.floor(Math.random() * gameState.drawPileCount))} className="btn btn-ghost" style={{ padding: '16px' }}>Ngẫu nhiên</button>
-                <button onClick={() => handleDefuse(gameState.drawPileCount)} className="btn btn-ghost" style={{ padding: '16px' }}>Cuối bộ bài</button>
-              </div>
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(239,68,68,0.3)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <motion.div className="defuse-modal glass" style={{ borderRadius: 40, padding: 40, border: '2px solid var(--accent-red)', background: 'var(--bg-surface)', textAlign: 'center', width: 480, boxShadow: 'var(--shadow-glow-cyan)' }}>
+                <div style={{ fontSize: '4.5rem', animation: 'float 2s ease-in-out infinite' }}>💣</div>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-red)', marginTop: 12 }}>
+                  {t('game.kittens.logs.exploded', { player: 'BẠN' })}
+                </h2>
+                <p style={{ fontWeight: 800, margin: '12px 0 32px 0', color: 'var(--text-secondary)' }}>Sử dụng Gỡ Bom (DEFUSE) để đưa bom trở lại bộ bài!</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+                  <motion.button whileHover={{ scale: 1.05 }} whileActive={{ scale: 0.95 }} onClick={() => handleDefuse(0)} className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 800 }}>Đầu bộ bài</motion.button>
+                  <motion.button whileHover={{ scale: 1.05 }} whileActive={{ scale: 0.95 }} onClick={() => handleDefuse(Math.floor(Math.random() * gameState.drawPileCount))} className="btn btn-ghost" style={{ padding: '14px', border: '1px solid var(--border)', borderRadius: 14, fontWeight: 800 }}>Ngẫu nhiên</motion.button>
+                  <motion.button whileHover={{ scale: 1.05 }} whileActive={{ scale: 0.95 }} onClick={() => handleDefuse(gameState.drawPileCount)} className="btn btn-ghost" style={{ padding: '14px', border: '1px solid var(--border)', borderRadius: 14, fontWeight: 800 }}>Cuối bộ bài</motion.button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
 
           {gameState.futureCards?.length > 0 && isMyTurn && (
-            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="future-modal" style={{ borderRadius: 40, width: 'auto', padding: 40 }}>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 24 }}>🔮 {t('game.kittens.cards.SEE_THE_FUTURE')}</h3>
-              <div style={{ display: 'flex', gap: 16 }}>
-                {gameState.futureCards.map((card, i) => (
-                  <div key={i} className="kittens-card" style={{ background: CARD_COLORS[card], width: 100, height: 140, border: '4px solid white' }}>
-                    <div className="card-art-container">
-                      <div className="card-art" style={{
-                        backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
-                        backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
-                        backgroundPosition: CAT_POSITIONS[card] || 'center'
-                      }} />
-                    </div>
-                    <div className="card-label" style={{ fontSize: '0.6rem', fontWeight: 900 }}>{t(`game.kittens.cards.${card}`)}</div>
-                  </div>
-                ))}
-              </div>
-              <button className="btn btn-primary" style={{ marginTop: 32, width: '100%' }} onClick={handleCloseFuture}>Xong</button>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(6,8,16,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <motion.div className="future-modal glass" style={{ borderRadius: 40, padding: 32, border: '2px solid var(--accent-cyan)', background: 'var(--bg-surface)', textAlign: 'center', width: 'auto' }}>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 24, color: 'var(--accent-cyan)' }}>🔮 {t('game.kittens.cards.SEE_THE_FUTURE', 'Xem Trước Tương Lai')}</h3>
+                <div style={{ display: 'flex', gap: 14 }}>
+                  {gameState.futureCards.map((card, i) => (
+                    <motion.div 
+                      key={i} 
+                      initial={{ scale: 0.8, rotate: 10 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: i * 0.08, type: 'spring' }}
+                      className="kittens-card" 
+                      style={{ background: CARD_COLORS[card], width: 95, height: 135, border: '3px solid white', borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}
+                    >
+                      <div className="card-art-container">
+                        <div className="card-art" style={{
+                          backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
+                          backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
+                          backgroundPosition: CAT_POSITIONS[card] || 'center'
+                        }} />
+                      </div>
+                      <div className="card-label" style={{ fontSize: '0.6rem', fontWeight: 900, padding: '4px 0', background: 'rgba(0,0,0,0.4)', color: '#fff' }}>
+                        {CARD_EMOJIS[card]} {t(`game.kittens.cards.${card}`)}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+                <motion.button whileHover={{ scale: 1.03 }} whileActive={{ scale: 0.97 }} className="btn btn-primary" style={{ marginTop: 28, width: '100%', padding: 14, borderRadius: 14, fontWeight: 900 }} onClick={handleCloseFuture}>Xong</motion.button>
+              </motion.div>
             </motion.div>
           )}
 
           {gameState.phase === 'AWAITING_FAVOR' && gameState.favorTargetId === user?.id && (
-            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="favor-modal" style={{ borderRadius: 40, width: 600 }}>
-              <h3 style={{ fontWeight: 900 }}>🎁 {t('game.kittens.logs.favor', { player: gameState.players.find(p => p.id === gameState.favorRequesterId)?.username, target: 'bạn' })}</h3>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginTop: 24 }}>
-                {myHand.map((card, idx) => (
-                  <div key={idx} className="kittens-card" style={{ background: CARD_COLORS[card], width: 80, height: 120 }} onClick={() => handleGiveCard(card)}>
-                    <div className="card-art-container">
-                      <div className="card-art" style={{
-                        backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
-                        backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
-                        backgroundPosition: CAT_POSITIONS[card] || 'center'
-                      }} />
-                    </div>
-                    <div className="card-label" style={{ fontSize: '0.5rem', fontWeight: 900 }}>{t(`game.kittens.cards.${card}`)}</div>
-                  </div>
-                ))}
-              </div>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(6,8,16,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <motion.div className="favor-modal glass" style={{ borderRadius: 40, padding: 32, border: '2px solid var(--accent-purple)', background: 'var(--bg-surface)', textAlign: 'center', width: 550 }}>
+                <h3 style={{ fontWeight: 900, color: 'var(--text-primary)', fontSize: '1.25rem' }}>🎁 {t('game.kittens.logs.favor', { player: gameState.players.find(p => p.id === gameState.favorRequesterId)?.username, target: 'bạn' })}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: 4 }}>Hãy chọn 1 lá bài trên tay để tặng cho họ.</p>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 24 }}>
+                  {myHand.map((card, idx) => (
+                    <motion.div 
+                      key={idx} 
+                      whileHover={{ scale: 1.05, y: -4 }}
+                      className="kittens-card" 
+                      style={{ background: CARD_COLORS[card], width: 80, height: 115, border: '3px solid white', borderRadius: 14, overflow: 'hidden', cursor: 'pointer' }} 
+                      onClick={() => handleGiveCard(card)}
+                    >
+                      <div className="card-art-container">
+                        <div className="card-art" style={{
+                          backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
+                          backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
+                          backgroundPosition: CAT_POSITIONS[card] || 'center'
+                        }} />
+                      </div>
+                      <div className="card-label" style={{ fontSize: '0.55rem', fontWeight: 900, padding: '4px 0', background: 'rgba(0,0,0,0.4)', color: '#fff' }}>
+                        {CARD_EMOJIS[card]} {t(`game.kittens.cards.${card}`)}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* My Hand Area */}
-        <div className="game-hand-area">
-          <div style={{ flex: 1, display: 'flex', gap: 12, overflowX: 'auto', padding: '20px 0', minHeight: 180 }}>
+        <div className="game-hand-area" style={{ background: 'rgba(0,0,0,0.15)', borderTop: '1px solid var(--border)', borderRadius: '40px 40px 0 0', margin: '0 -40px', padding: '16px 40px' }}>
+          <div style={{ flex: 1, display: 'flex', gap: -20, overflowX: 'auto', padding: '16px 0', minHeight: 180, scrollbarWidth: 'none' }}>
             <AnimatePresence>
-              {myHand.map((card, idx) => (
-                <motion.div 
-                  key={`${card}-${idx}`}
-                  layout initial={{ scale: 0, x: 50 }} animate={{ scale: 1, x: 0 }}
-                  whileHover={{ y: -40, scale: 1.1, zIndex: 10 }}
-                  className="kittens-card"
-                  style={{ 
-                    background: CARD_COLORS[card], width: 110, height: 160, 
-                    border: selectedCards.includes(idx) ? '6px solid var(--accent-gold)' : '4px solid white',
-                    boxShadow: selectedCards.includes(idx) ? '0 0 20px var(--accent-gold)' : '0 10px 20px rgba(0,0,0,0.2)'
-                  }}
-                  onClick={() => handlePlayCard(card, idx)}
-                >
-                  <div className="card-art-container">
-                    <div className="card-art" style={{
-                      backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
-                      backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
-                      backgroundPosition: CAT_POSITIONS[card] || 'center'
-                    }} />
-                  </div>
-                  <div className="card-label" style={{ fontSize: '0.75rem', fontWeight: 900 }}>{t(`game.kittens.cards.${card}`)}</div>
-                  {selectedCards.includes(idx) && (
-                    <div style={{ position: 'absolute', top: 10, right: 10, background: 'var(--accent-gold)', color: 'black', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>✓</div>
-                  )}
-                </motion.div>
-              ))}
+              {myHand.map((card, idx) => {
+                const isSelected = selectedCards.includes(idx);
+                return (
+                  <motion.div 
+                    key={`${card}-${idx}`}
+                    layout 
+                    initial={{ scale: 0, x: 40 }} 
+                    animate={{ scale: 1, x: 0 }}
+                    whileHover={{ y: -40, scale: 1.15, zIndex: 10, boxShadow: isSelected ? '0 15px 30px rgba(251,191,36,0.3)' : `0 15px 30px ${CARD_GLOWS[card]}` }}
+                    className="kittens-card"
+                    style={{ 
+                      background: CARD_COLORS[card], 
+                      width: 100, 
+                      height: 145, 
+                      border: isSelected ? '4px solid var(--accent-gold)' : '3px solid white',
+                      boxShadow: isSelected ? '0 0 15px var(--accent-gold)' : 'var(--shadow-sm)',
+                      borderRadius: 18,
+                      overflow: 'hidden',
+                      margin: '0 -15px',
+                      cursor: isMyTurn ? 'pointer' : 'default'
+                    }}
+                    onClick={() => handlePlayCard(card, idx)}
+                  >
+                    <div className="card-art-container">
+                      <div className="card-art" style={{
+                        backgroundImage: `url(${KITTENS_IMAGES[card] || ''})`,
+                        backgroundSize: card?.startsWith('CAT_') ? '400% 100%' : 'cover',
+                        backgroundPosition: CAT_POSITIONS[card] || 'center'
+                      }} />
+                    </div>
+                    <div className="card-label" style={{ fontSize: '0.65rem', fontWeight: 900, padding: '4px 0', background: 'rgba(0,0,0,0.4)', color: '#fff', textAlign: 'center' }}>
+                      {CARD_EMOJIS[card]} {t(`game.kittens.cards.${card}`)}
+                    </div>
+                    {isSelected && (
+                      <div style={{ position: 'absolute', top: 6, right: 6, background: 'var(--accent-gold)', color: 'black', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.65rem', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>✓</div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
 
           <div className="game-control-panel">
-            <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`} style={{ fontSize: '1.2rem', padding: '12px 24px', width: '100%' }}>
-              {isMyTurn ? t('game.yourTurn') : `Đợi ${gameState.players.find(p => p.id === gameState.currentPlayerId)?.username}...`}
+            <div className={`turn-indicator ${isMyTurn ? 'my-turn' : ''}`} style={{ fontSize: '1rem', padding: '10px 18px', width: '100%', fontWeight: 900, borderRadius: 16, background: isMyTurn ? 'var(--accent-gold)' : 'var(--bg-glass)', color: isMyTurn ? '#000' : 'var(--text-secondary)', textAlign: 'center', border: isMyTurn ? 'none' : '1px solid var(--border)' }}>
+              {isMyTurn ? t('game.yourTurn', 'LƯỢT CỦA BẠN') : `Đợi ${gameState.players.find(p => p.id === gameState.currentPlayerId)?.username}...`}
             </div>
             {selectedCards.length > 0 && (
-              <button className="btn btn-primary" onClick={handleComboPlay} style={{ width: '100%', padding: '16px' }}>
+              <motion.button 
+                whileHover={{ scale: 1.03 }}
+                whileActive={{ scale: 0.97 }}
+                className="btn btn-primary" 
+                onClick={handleComboPlay} 
+                style={{ width: '100%', padding: '14px', borderRadius: 14, fontWeight: 900, background: 'linear-gradient(135deg, var(--accent-gold), var(--accent-red))' }}
+              >
                 🔥 COMBO ({selectedCards.length} lá)
-              </button>
+              </motion.button>
             )}
             {gameState.turnsLeft > 1 && (
-              <div style={{ background: 'var(--accent-red)', color: 'white', padding: '8px 20px', borderRadius: 99, fontWeight: 900, fontSize: '0.9rem' }}>
+              <motion.div 
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                style={{ background: 'var(--accent-red)', color: 'white', padding: '6px 16px', borderRadius: 20, fontWeight: 900, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
                 🧨 CÒN {gameState.turnsLeft} LƯỢT!
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
@@ -407,17 +554,47 @@ export default function ExplodingKittensPage() {
       {/* Game Over Overlay */}
       <AnimatePresence>
         {gameState.phase === 'GAME_OVER' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="game-over-overlay" style={{ zIndex: 10000 }}>
-            <motion.div initial={{ scale: 0.8, y: 50 }} animate={{ scale: 1, y: 0 }} className="game-over-card" style={{ padding: 60, borderRadius: 60, pointerEvents: 'auto' }}>
-              <div style={{ fontSize: '6rem', marginBottom: 20 }}>🏆</div>
-              <h1 className="display-font" style={{ fontSize: '3.5rem', marginBottom: 24 }}>{t('game.gameOver')}</h1>
-              <div style={{ padding: '24px 48px', background: '#fff9c4', borderRadius: 32, border: '6px solid #fbc02d', marginBottom: 40 }}>
-                <div style={{ fontWeight: 900, fontSize: '2rem' }}>{gameState.players?.find(p => p.id === gameState.winnerId)?.username}</div>
-                <div style={{ color: '#f57f17', fontWeight: 800, marginTop: 8 }}>CHIẾN THẮNG!</div>
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="game-over-overlay" 
+            style={{ zIndex: 10000, background: 'rgba(6,8,16,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0 }}
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 50 }} 
+              animate={{ scale: 1, y: 0 }} 
+              className="game-over-card glass" 
+              style={{ padding: 40, borderRadius: 40, border: '1px solid var(--accent-gold)', width: 450, textAlign: 'center', boxShadow: 'var(--shadow-glow-gold)' }}
+            >
+              <div style={{ fontSize: '5rem', marginBottom: 12, animation: 'float 3s ease-in-out infinite' }}>🏆</div>
+              <h1 className="display-font" style={{ fontSize: '2.5rem', color: 'var(--text-primary)', marginBottom: 12 }}>{t('game.gameOver', 'TRÒ CHƠI KẾT THÚC')}</h1>
+              
+              <div style={{ padding: '24px 40px', background: 'rgba(245,158,11,0.08)', borderRadius: 24, border: '2px solid var(--accent-gold)', margin: '24px 0' }}>
+                <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--accent-gold)', fontWeight: 800, marginBottom: 6 }}>Kẻ Sống Sót</div>
+                <h2 style={{ fontSize: '1.8rem', margin: 0, fontWeight: 900, color: 'var(--text-primary)' }}>
+                  {gameState.players?.find(p => p.id === gameState.winnerId)?.username} CHIẾN THẮNG!
+                </h2>
               </div>
-              <div style={{ display: 'flex', gap: 20 }}>
-                <button onClick={() => navigate(`/room/${roomId}`)} className="btn btn-primary" style={{ padding: '18px 40px' }}>{t('game.replay')}</button>
-                <button onClick={() => navigate('/lobby')} className="btn btn-ghost" style={{ padding: '18px 40px' }}>{t('game.returnLobby')}</button>
+              
+              <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                <motion.button 
+                  whileHover={{ scale: 1.05, boxShadow: 'var(--shadow-glow)' }}
+                  whileActive={{ scale: 0.95 }}
+                  onClick={() => navigate(`/room/${roomId}`)} 
+                  className="btn btn-primary" 
+                  style={{ padding: '14px 28px', borderRadius: 16, fontWeight: 800 }}
+                >
+                  {t('game.replay', 'Chơi Lại')}
+                </motion.button>
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileActive={{ scale: 0.95 }}
+                  onClick={() => navigate('/lobby')} 
+                  className="btn btn-ghost" 
+                  style={{ padding: '14px 28px', borderRadius: 16, border: '1px solid var(--border)', fontWeight: 800 }}
+                >
+                  {t('game.returnLobby', 'Về Sảnh')}
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
@@ -460,12 +637,6 @@ export default function ExplodingKittensPage() {
             width: 100%;
             height: 100%;
         }
-        .card-label {
-            text-align: center;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
         .pulse-gold {
             animation: pulse-gold-glow 2s infinite;
         }
@@ -473,6 +644,10 @@ export default function ExplodingKittensPage() {
             0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
             70% { box-shadow: 0 0 0 20px rgba(255, 215, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+        @keyframes pulse-border {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.02); opacity: 0.9; }
         }
       `}</style>
     </div>

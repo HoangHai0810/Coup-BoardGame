@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -54,24 +55,26 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <SocketProvider>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: '#1a1b2e',
-                color: '#f0f0f8',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '12px',
-                fontSize: '0.9rem'
-              },
-              duration: 3000
-            }}
-          />
-          <AppRoutes />
-        </SocketProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                style: {
+                  background: 'var(--bg-card-solid)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem'
+                },
+                duration: 3000
+              }}
+            />
+            <AppRoutes />
+          </SocketProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

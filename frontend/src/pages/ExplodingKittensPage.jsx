@@ -49,7 +49,7 @@ const CAT_POSITIONS = {
 
 function formatKittensLog(log, t) {
   if (typeof log === 'string') return log;
-  const key = log.key.startsWith('game.logs.') ? log.key : `game.kittens.logs.${log.key.replace('kittens.logs.', '')}`;
+  const key = log.key.startsWith('game.') ? log.key : `game.kittens.logs.${log.key.replace('kittens.logs.', '')}`;
   const params = {
     player: 'Người chơi',
     target: 'người chơi tiếp theo',

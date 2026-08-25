@@ -95,8 +95,11 @@ public class UnoGameService {
         return deck;
     }
 
-    public UnoGameState playCard(String roomId, String playerId, String cardId, UnoColor newColor) {
+    public synchronized UnoGameState playCard(String roomId, String playerId, String cardId, UnoColor newColor) {
         UnoGameState state = games.get(roomId);
+        if (state == null || state.getPhase() != UnoGameState.Phase.PLAYER_TURN) throw new IllegalStateException("Game is not accepting cards");
+        if (!state.getCurrentPlayer().getId().equals(playerId)) throw new IllegalArgumentException("Not this player's turn");
+        applyMissedUnoPenalty(state, playerId);
         UnoPlayer player = state.getPlayerById(playerId);
         UnoCard card = player.getHand().stream().filter(c -> c.getId().equals(cardId)).findFirst().orElse(null);
 
@@ -114,6 +117,7 @@ public class UnoGameService {
         state.setActiveValue(card.getValue());
         
         if (card.getColor() == UnoColor.WILD) {
+            if (newColor == null || newColor == UnoColor.WILD) throw new IllegalArgumentException("A color must be selected for a Wild card");
             state.setActiveColor(newColor);
         } else {
             state.setActiveColor(card.getColor());
@@ -124,6 +128,7 @@ public class UnoGameService {
 
         // Check win
         if (player.getHand().isEmpty()) {
+            state.setPendingUnoPlayerId(null);
             state.setPhase(UnoGameState.Phase.GAME_OVER);
             state.setWinnerId(player.getId());
             state.addLog("game.logs.winner", Map.of("player", player.getUsername()));
@@ -131,6 +136,10 @@ public class UnoGameService {
             List<String> allPlayerIds = state.getPlayers().stream().map(UnoPlayer::getId).toList();
             ratingService.processGameOver("UNO", allPlayerIds, player.getId());
         } else {
+            if (player.getHand().size() == 1) {
+                state.setPendingUnoPlayerId(player.getId());
+                state.addLog("game.uno.logs.mustCall", Map.of("player", player.getUsername()));
+            }
             state.advanceTurn();
         }
 
@@ -159,12 +168,36 @@ public class UnoGameService {
         }
     }
 
-    public UnoGameState drawCard(String roomId, String playerId) {
+    public synchronized UnoGameState drawCard(String roomId, String playerId) {
         UnoGameState state = games.get(roomId);
+        if (state == null || state.getPhase() != UnoGameState.Phase.PLAYER_TURN) throw new IllegalStateException("Game is not accepting draws");
+        if (!state.getCurrentPlayer().getId().equals(playerId)) throw new IllegalArgumentException("Not this player's turn");
+        applyMissedUnoPenalty(state, playerId);
         UnoPlayer player = state.getCurrentPlayer();
         drawCards(state, player, 1);
         state.advanceTurn();
         return state;
+    }
+
+    public synchronized UnoGameState callUno(String roomId, String playerId) {
+        UnoGameState state = games.get(roomId);
+        if (state == null) return null;
+        if (!playerId.equals(state.getPendingUnoPlayerId())) throw new IllegalArgumentException("UNO cannot be called now");
+        UnoPlayer player = state.getPlayerById(playerId);
+        state.setPendingUnoPlayerId(null);
+        state.addLog("game.uno.logs.called", Map.of("player", player.getUsername()));
+        return state;
+    }
+
+    private void applyMissedUnoPenalty(UnoGameState state, String actingPlayerId) {
+        String pendingId = state.getPendingUnoPlayerId();
+        if (pendingId == null || pendingId.equals(actingPlayerId)) return;
+        UnoPlayer offender = state.getPlayerById(pendingId);
+        if (offender != null && offender.getHand().size() == 1) {
+            drawCards(state, offender, 2);
+            state.addLog("game.uno.logs.penalty", Map.of("player", offender.getUsername()));
+        }
+        state.setPendingUnoPlayerId(null);
     }
 
     private void drawCards(UnoGameState state, UnoPlayer player, int count) {

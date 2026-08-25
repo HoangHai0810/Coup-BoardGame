@@ -31,6 +31,7 @@ public class UnoWebSocketController {
     private final SimpMessagingTemplate messaging;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final Map<String, java.util.concurrent.ScheduledFuture<?>> turnTimers = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, java.util.concurrent.ScheduledFuture<?>> aiTurnTimers = new java.util.concurrent.ConcurrentHashMap<>();
 
     @MessageMapping("/game/{roomId}/uno/play")
     public void handleUnoPlay(@DestinationVariable String roomId,
@@ -49,9 +50,22 @@ public class UnoWebSocketController {
         broadcastUnoState(roomId, state);
     }
 
+    @MessageMapping("/game/{roomId}/uno/call")
+    public void handleUnoCall(@DestinationVariable String roomId, Authentication auth) {
+        UserEntity user = (UserEntity) auth.getPrincipal();
+        UnoGameState state = unoService.callUno(roomId, user.getId().toString());
+        if (state != null) broadcastUnoState(roomId, state);
+    }
+
     public void scheduleUnoAITurnIfNeeded(String roomId, UnoGameState state) {
+        java.util.concurrent.ScheduledFuture<?> previous = aiTurnTimers.remove(roomId);
+        if (previous != null) previous.cancel(false);
         if (state.getPhase() == UnoGameState.Phase.PLAYER_TURN && state.getCurrentPlayer().isAI()) {
-            scheduler.schedule(() -> processUnoAITurn(roomId), 1200, TimeUnit.MILLISECONDS);
+            java.util.concurrent.ScheduledFuture<?> timer = scheduler.schedule(() -> {
+                aiTurnTimers.remove(roomId);
+                processUnoAITurn(roomId);
+            }, 1200, TimeUnit.MILLISECONDS);
+            aiTurnTimers.put(roomId, timer);
         }
     }
 
@@ -66,6 +80,7 @@ public class UnoWebSocketController {
         if (card != null) {
             UnoColor color = (card.getColor() == UnoColor.WILD) ? unoAIService.decideNewColor(ai) : null;
             nextState = unoService.playCard(roomId, ai.getId(), card.getId(), color);
+            if (ai.getId().equals(nextState.getPendingUnoPlayerId())) nextState = unoService.callUno(roomId, ai.getId());
         } else {
             nextState = unoService.drawCard(roomId, ai.getId());
         }
@@ -121,6 +136,7 @@ public class UnoWebSocketController {
         pub.put("currentPlayerId", state.getCurrentPlayer().getId());
         pub.put("actionLog", state.getActionLog());
         pub.put("winnerId", state.getWinnerId());
+        pub.put("pendingUnoPlayerId", state.getPendingUnoPlayerId());
         pub.put("activeColor", state.getActiveColor().name());
         pub.put("activeValue", state.getActiveValue().name());
         pub.put("drawPileCount", state.getDrawPile().size());

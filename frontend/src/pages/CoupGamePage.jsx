@@ -30,27 +30,41 @@ const CARD_THEMES = {
   CONTESSA: { color: 'var(--contessa-color, #dc2626)', glow: 'rgba(220,38,38,0.4)', icon: '🛡️' }
 };
 
-export default function CoupGamePage() {
+const PREVIEW_COUP_USER = { id: 'preview-me', username: 'Bạn' };
+const PREVIEW_COUP_STATE = {
+  phase: 'PLAYER_TURN', currentPlayerId: 'preview-me', pendingAction: null, actionLog: ['Ván Coup bắt đầu. Đến lượt của Bạn.'],
+  players: [
+    { id: 'preview-me', username: 'Bạn', coins: 3, influenceCount: 2, revealedCards: [], eliminated: false, isAI: false },
+    { id: 'p2', username: 'Roberta', coins: 2, influenceCount: 2, revealedCards: [], eliminated: false, isAI: true },
+    { id: 'p3', username: 'Magnus', coins: 5, influenceCount: 2, revealedCards: [], eliminated: false, isAI: true },
+    { id: 'p4', username: 'Isabella', coins: 1, influenceCount: 2, revealedCards: [], eliminated: false, isAI: true }
+  ]
+};
+const PREVIEW_COUP_CARDS = [{ type: 'DUKE', revealed: false }, { type: 'CAPTAIN', revealed: false }];
+
+export default function CoupGamePage({ preview = false }) {
   const { roomId }          = useParams();
   const { user }            = useAuth();
   const { subscribe, send, connected } = useSocket();
   const navigate            = useNavigate();
   const { t }               = useTranslation();
+  const currentUser         = preview ? PREVIEW_COUP_USER : user;
 
-  const [gameState, setGameState] = useState(null);
-  const [myCards, setMyCards] = useState([]);
+  const [gameState, setGameState] = useState(preview ? PREVIEW_COUP_STATE : null);
+  const [myCards, setMyCards] = useState(preview ? PREVIEW_COUP_CARDS : []);
   const [targetAction, setTargetAction] = useState(null);
   const logEndRef = useRef(null);
   const soundLogRef = useRef(0);
 
   useEffect(() => {
+    if (preview) return undefined;
     const unsub1 = subscribe(`/topic/game/${roomId}`, state => {
       setGameState(state);
       if (state.phase === 'PLAYER_TURN') {
         setTargetAction(null);
       }
     });
-    const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
+    const unsub2 = subscribe(`/topic/game/${roomId}/private/${currentUser?.id}`, data => {
       setMyCards(data.cards);
     });
     
@@ -59,7 +73,7 @@ export default function CoupGamePage() {
     }
     
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe, send, connected]);
+  }, [roomId, currentUser?.id, subscribe, send, connected, preview]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -69,8 +83,12 @@ export default function CoupGamePage() {
   }, [gameState?.actionLog]);
 
   const sendAction = useCallback((action, targetId = null) => {
+    if (preview) {
+      setGameState(current => ({ ...current, actionLog: [...current.actionLog, `Bạn thực hiện ${action}${targetId ? ' vào mục tiêu đã chọn' : ''}.`] }));
+      return;
+    }
     send(`/app/game/${roomId}/action`, { action, targetId });
-  }, [roomId, send]);
+  }, [roomId, send, preview]);
 
   const handleAction = (action) => {
     if (['STEAL', 'ASSASSINATE', 'COUP'].includes(action)) {
@@ -107,13 +125,13 @@ export default function CoupGamePage() {
     );
   }
 
-  const me = gameState.players?.find(p => p.id === user?.id);
-  const isMyTurn = gameState.currentPlayerId === user?.id;
+  const me = gameState.players?.find(p => p.id === currentUser?.id);
+  const isMyTurn = gameState.currentPlayerId === currentUser?.id;
   const pendingAction = gameState.pendingAction;
   const isResponding = gameState.phase === 'AWAITING_RESPONSES' || gameState.phase === 'AWAITING_BLOCK_RESPONSE';
-  const needToLoseCard = gameState.phase === 'AWAITING_CARD_LOSS' && gameState.cardLossPlayerId === user?.id;
-  const needExchange = gameState.phase === 'AWAITING_EXCHANGE' && pendingAction?.actorId === user?.id;
-  const others = gameState.players?.filter(p => p.id !== user?.id) || [];
+  const needToLoseCard = gameState.phase === 'AWAITING_CARD_LOSS' && gameState.cardLossPlayerId === currentUser?.id;
+  const needExchange = gameState.phase === 'AWAITING_EXCHANGE' && pendingAction?.actorId === currentUser?.id;
+  const others = gameState.players?.filter(p => p.id !== currentUser?.id) || [];
 
   return (
     <div className="page coup-game-page" style={{
@@ -251,14 +269,14 @@ export default function CoupGamePage() {
             >
               <div style={{ position: 'relative' }}>
                 <img 
-                  src={me?.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.username}`}
-                  alt={user?.username} 
+                  src={me?.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser?.username}`}
+                  alt={currentUser?.username}
                   className="player-avatar" 
                   style={{ width: 90, height: 90, border: isMyTurn ? '3px solid var(--accent-primary)' : '2px solid var(--border)' }} 
                 />
                 <div className="badge badge-gold" style={{ position: 'absolute', bottom: 0, right: 0, fontSize: '0.7rem', padding: '4px 10px' }}>{t('game.you', 'BẠN')}</div>
               </div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, marginTop: 12, color: 'var(--text-primary)' }}>{user?.username}</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, marginTop: 12, color: 'var(--text-primary)' }}>{currentUser?.username}</h2>
               
               <motion.div 
                 animate={me?.coins >= 10 ? { scale: [1, 1.05, 1], filter: 'drop-shadow(0 0 10px var(--accent-gold))' } : {}}
@@ -333,7 +351,7 @@ export default function CoupGamePage() {
             <TurnTimer 
               currentPlayerId={gameState.currentPlayerId} 
               currentPlayerName={gameState.players?.find(p => p.id === gameState.currentPlayerId)?.username || ''}
-              currentUserId={user?.id}
+              currentUserId={currentUser?.id}
               isActive={gameState.phase !== 'GAME_OVER'}
             />
             
@@ -400,7 +418,7 @@ export default function CoupGamePage() {
                 )}
 
                 {isResponding && pendingAction && !me?.eliminated &&
-                  !gameState.pendingAction?.respondedPlayerIds?.includes(user?.id) && (
+                  !gameState.pendingAction?.respondedPlayerIds?.includes(currentUser?.id) && (
                   <motion.div 
                     key="response-panel" 
                     initial={{ opacity: 0, scale: 0.98 }} 
@@ -409,7 +427,7 @@ export default function CoupGamePage() {
                     style={{ height: '100%' }}
                   >
                     <ResponsePanel
-                      pendingAction={pendingAction} players={gameState.players} userId={user?.id}
+                      pendingAction={pendingAction} players={gameState.players} userId={currentUser?.id}
                       phase={gameState.phase} onChallenge={handleChallenge} onBlock={handleBlock} onAllow={handleAllow} t={t}
                     />
                   </motion.div>

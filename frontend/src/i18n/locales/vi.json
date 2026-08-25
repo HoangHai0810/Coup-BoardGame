@@ -202,7 +202,10 @@
         "skip": "{{player}} bị cấm lượt!",
         "reverse": "Vòng chơi bị đảo ngược!",
         "draw2": "{{player}} phải rút thêm 2 lá!",
-        "draw4": "{{player}} phải rút thêm 4 lá!"
+        "draw4": "{{player}} phải rút thêm 4 lá!",
+        "mustCall": "⚠️ {{player}} còn 1 lá — phải hô UNO!",
+        "called": "📣 {{player}} đã hô UNO!",
+        "penalty": "🚨 {{player}} quên hô UNO và bị phạt rút 2 lá!"
       }
     },
     "monopoly": {

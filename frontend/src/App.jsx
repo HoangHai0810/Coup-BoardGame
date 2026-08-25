@@ -40,6 +40,7 @@ function AppRoutes() {
       <Route path="/game/coup/:roomId" element={
         <ProtectedRoute><CoupGamePage /></ProtectedRoute>
       } />
+      {import.meta.env.DEV && <Route path="/preview/coup" element={<CoupGamePage preview />} />}
       <Route path="/game/kittens/:roomId" element={
         <ProtectedRoute><ExplodingKittensPage /></ProtectedRoute>
       } />
@@ -47,6 +48,7 @@ function AppRoutes() {
       <Route path="/game/uno/:roomId" element={
         <ProtectedRoute><UnoPage /></ProtectedRoute>
       } />
+      {import.meta.env.DEV && <Route path="/preview/uno" element={<UnoPage preview />} />}
       <Route path="/game/monopoly/:roomId" element={
         <ProtectedRoute><MonopolyPage /></ProtectedRoute>
       } />

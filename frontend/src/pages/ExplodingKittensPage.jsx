@@ -123,8 +123,10 @@ export default function ExplodingKittensPage({ preview = false }) {
   const [selectedCards, setSelectedCards] = useState([]);
   const [requestedCard] = useState(null);
   const [logOpen, setLogOpen] = useState(true);
+  const [explosionEvent, setExplosionEvent] = useState(null);
   const logEndRef = useRef(null);
   const soundLogRef = useRef(0);
+  const explodedPlayersRef = useRef(new Set((preview ? PREVIEW_STATE.players : []).filter(player => player.exploded).map(player => player.id)));
 
   useEffect(() => {
     if (preview) return;
@@ -148,6 +150,16 @@ export default function ExplodingKittensPage({ preview = false }) {
     if (soundLogRef.current && length > soundLogRef.current) playGameSound('card');
     soundLogRef.current = length;
   }, [gameState?.actionLog]);
+
+  useEffect(() => {
+    const newlyExploded = gameState?.players?.find(player => player.exploded && !explodedPlayersRef.current.has(player.id));
+    explodedPlayersRef.current = new Set((gameState?.players || []).filter(player => player.exploded).map(player => player.id));
+    if (!newlyExploded) return undefined;
+    setExplosionEvent(newlyExploded);
+    playGameSound('alert');
+    const timer = window.setTimeout(() => setExplosionEvent(null), 4200);
+    return () => window.clearTimeout(timer);
+  }, [gameState?.players]);
 
   if (!gameState) return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, background: 'var(--bg-base)' }}>
@@ -197,6 +209,16 @@ export default function ExplodingKittensPage({ preview = false }) {
 
   const handleDraw = () => {
     if (!isMyTurn || gameState.phase !== 'PLAYER_TURN') return;
+    if (preview) {
+      setGameState(current => ({
+        ...current,
+        currentPlayerId: 'p2',
+        players: current.players.map(player => player.id === currentUser.id ? { ...player, exploded: true, handCount: 0 } : player),
+        actionLog: [...current.actionLog, { key: 'game.kittens.logs.exploded', params: { player: currentUser.username } }]
+      }));
+      setMyHand([]);
+      return;
+    }
     send(`/app/game/${roomId}/kittens/draw`, {});
   };
 
@@ -408,7 +430,21 @@ export default function ExplodingKittensPage({ preview = false }) {
             </div>
             ) : <button className="log-popup-button" onClick={() => setLogOpen(true)}>📜<span>Nhật ký</span></button>}
           </div>
-          <ChatBox roomId={roomId || 'preview-room'} />
+      <ChatBox roomId={roomId || 'preview-room'} />
+
+      <AnimatePresence>
+        {explosionEvent && (
+          <motion.div className="kittens-explosion-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="kittens-explosion-card" initial={{ scale: .35, rotate: -8 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: .6, opacity: 0 }}>
+              <div className="explosion-burst">💥</div>
+              <div className="explosion-avatar"><img src={explosionEvent.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${explosionEvent.username}`} alt="" /></div>
+              <h2>{explosionEvent.id === currentUser?.id ? 'BẠN ĐÃ BỊ NỔ!' : `${explosionEvent.username} ĐÃ BỊ NỔ!`}</h2>
+              <p>{explosionEvent.id === currentUser?.id ? 'Bạn đã bị loại khỏi ván đấu.' : `${explosionEvent.username} đã bị loại khỏi ván đấu.`}</p>
+              <button onClick={() => setExplosionEvent(null)}>Đã hiểu</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
         </div>
 
         {/* Modals for Action Responses */}

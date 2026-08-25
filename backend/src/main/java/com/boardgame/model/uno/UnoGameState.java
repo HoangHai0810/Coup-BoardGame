@@ -29,6 +29,7 @@ public class UnoGameState {
 
     private List<GameState.LogEntry> actionLog = new ArrayList<>();
     private String winnerId;
+    private String pendingUnoPlayerId;
 
     public void addLog(String key, Map<String, Object> params) {
         actionLog.add(new GameState.LogEntry(key, params));

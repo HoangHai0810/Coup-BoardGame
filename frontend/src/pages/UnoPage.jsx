@@ -26,6 +26,21 @@ const NUMBER_MAP = {
   'FIVE': '5', 'SIX': '6', 'SEVEN': '7', 'EIGHT': '8', 'NINE': '9'
 };
 
+const PREVIEW_UNO_USER = { id: 'preview-me', username: 'Bạn' };
+const PREVIEW_UNO_HAND = [
+  { id: 'wild-preview', color: 'WILD', value: 'WILD' },
+  { id: 'red-five-preview', color: 'RED', value: 'FIVE' }
+];
+const PREVIEW_UNO_STATE = {
+  gameType: 'UNO', phase: 'PLAYER_TURN', currentPlayerId: 'preview-me', activeColor: 'RED', activeValue: 'THREE',
+  drawPileCount: 61, clockwise: true, pendingUnoPlayerId: null, actionLog: [],
+  players: [
+    { id: 'preview-me', username: 'Bạn', handCount: 2, isAI: false },
+    { id: 'p2', username: 'Roberta', handCount: 5, isAI: true },
+    { id: 'p3', username: 'Magnus', handCount: 4, isAI: true }
+  ]
+};
+
 const getUnoSymbol = (val) => {
   if (val === 'SKIP') return '⊘';
   if (val === 'REVERSE') return '⇄';
@@ -36,31 +51,33 @@ const getUnoSymbol = (val) => {
   return val;
 };
 
-export default function UnoPage() {
+export default function UnoPage({ preview = false }) {
   const { roomId } = useParams();
   const { user } = useAuth();
   const { subscribe, send, connected } = useSocket();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const currentUser = preview ? PREVIEW_UNO_USER : user;
 
-  const [gameState, setGameState] = useState(null);
-  const [myHand, setMyHand] = useState([]);
+  const [gameState, setGameState] = useState(preview ? PREVIEW_UNO_STATE : null);
+  const [myHand, setMyHand] = useState(preview ? PREVIEW_UNO_HAND : []);
   const [choosingColorFor, setChoosingColorFor] = useState(null);
   const logEndRef = useRef(null);
   const soundLogRef = useRef(0);
 
   useEffect(() => {
+    if (preview) return undefined;
     const unsub1 = subscribe(`/topic/game/${roomId}`, data => {
       if (data.gameType === 'UNO') setGameState(data);
     });
-    const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
+    const unsub2 = subscribe(`/topic/game/${roomId}/private/${currentUser?.id}`, data => {
       setMyHand(data.hand || []);
     });
     if (connected) {
       send(`/app/game/${roomId}/connect`, {});
     }
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe, send, connected]);
+  }, [roomId, currentUser?.id, subscribe, send, connected, preview]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -80,7 +97,7 @@ export default function UnoPage() {
     </div>
   );
 
-  const isMyTurn = gameState.currentPlayerId === user?.id;
+  const isMyTurn = gameState.currentPlayerId === currentUser?.id;
 
   const handlePlayCard = (card) => {
     if (!isMyTurn) return;
@@ -92,8 +109,28 @@ export default function UnoPage() {
   };
 
   const selectColor = (color) => {
+    if (preview) {
+      setMyHand(current => current.filter(card => card.id !== choosingColorFor));
+      setGameState(current => ({
+        ...current,
+        currentPlayerId: 'p2', activeColor: color, activeValue: 'WILD', pendingUnoPlayerId: currentUser.id,
+        players: current.players.map(player => player.id === currentUser.id ? { ...player, handCount: 1 } : player),
+        actionLog: [...current.actionLog, 'Bạn đánh Wild và còn 1 lá — hãy hô UNO!']
+      }));
+      setChoosingColorFor(null);
+      return;
+    }
     send(`/app/game/${roomId}/uno/play`, { cardId: choosingColorFor, color });
     setChoosingColorFor(null);
+  };
+
+  const handleCallUno = () => {
+    if (preview) {
+      setGameState(current => ({ ...current, pendingUnoPlayerId: null, actionLog: [...current.actionLog, 'Bạn đã hô UNO!'] }));
+      playGameSound('success');
+      return;
+    }
+    send(`/app/game/${roomId}/uno/call`, {});
   };
 
   const handleDraw = () => {
@@ -140,7 +177,7 @@ export default function UnoPage() {
         
         {/* TOP: OPPONENTS */}
         <div className="opponents-row" style={{ display: 'flex', justifyContent: 'center', gap: 24, height: '140px', flexShrink: 0 }}>
-          {gameState.players.filter(p => p.id !== user?.id).map((p, i) => {
+          {gameState.players.filter(p => p.id !== currentUser?.id).map((p, i) => {
             const isCurrentTurn = gameState.currentPlayerId === p.id;
             return (
               <motion.div key={p.id} 
@@ -205,13 +242,13 @@ export default function UnoPage() {
             >
               <div style={{ position: 'relative' }}>
                 <img 
-                  src={user?.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user?.username}`} 
-                  alt={user?.username} 
+                  src={currentUser?.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser?.username}`}
+                  alt={currentUser?.username}
                   style={{ width: 72, height: 72, borderRadius: '50%', border: isMyTurn ? '3px solid var(--accent-primary)' : '2px solid var(--border)' }} 
                 />
                 <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--accent-gold)', color: 'black', padding: '3px 8px', borderRadius: 8, fontSize: '0.65rem', fontWeight: 900 }}>BẠN</div>
               </div>
-              <h2 style={{ color: 'var(--text-primary)', marginTop: 12, fontSize: '1.1rem', fontWeight: 900 }}>{user?.username}</h2>
+              <h2 style={{ color: 'var(--text-primary)', marginTop: 12, fontSize: '1.1rem', fontWeight: 900 }}>{currentUser?.username}</h2>
               
               {isMyTurn && (
                 <div className="badge badge-gold" style={{ marginTop: 12, padding: '4px 12px', fontSize: '0.7rem', fontWeight: 800, animation: 'pulse-border 2s infinite' }}>
@@ -247,7 +284,7 @@ export default function UnoPage() {
             <TurnTimer 
               currentPlayerId={gameState.currentPlayerId} 
               currentPlayerName={gameState.players.find(p => p.id === gameState.currentPlayerId)?.username || ''}
-              currentUserId={user?.id}
+              currentUserId={currentUser?.id}
               isActive={gameState.phase !== 'GAME_OVER'}
             />
             
@@ -337,31 +374,6 @@ export default function UnoPage() {
           {/* RIGHT: CHAT & SPECIAL */}
           <div className="game-right-col" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <ChatBox roomId={roomId} mode="inline" />
-            
-            <AnimatePresence>
-              {choosingColorFor && (
-                <motion.div 
-                  initial={{ y: 30, opacity: 0 }} 
-                  animate={{ y: 0, opacity: 1 }} 
-                  exit={{ y: 30, opacity: 0 }}
-                  className="glass" 
-                  style={{ padding: 20, borderRadius: 32, background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                >
-                  <h3 style={{ marginBottom: 16, textAlign: 'center', color: 'var(--text-primary)', fontWeight: 900, fontSize: '1rem' }}>Chọn màu bài:</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    {['RED', 'BLUE', 'GREEN', 'YELLOW'].map(c => (
-                      <motion.button 
-                        key={c} 
-                        whileHover={{ scale: 1.08 }} 
-                        whileActive={{ scale: 0.95 }}
-                        onClick={() => selectColor(c)} 
-                        style={{ height: 50, background: COLOR_MAP[c], border: '3px solid white', borderRadius: 14, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }} 
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
 
@@ -435,6 +447,34 @@ export default function UnoPage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {choosingColorFor && (
+          <motion.div className="uno-color-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .18 }}>
+            <motion.div className="uno-color-dialog" initial={{ scale: .8, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .85, opacity: 0 }} transition={{ duration: .2 }}>
+              <span>🌈 WILD</span>
+              <h2>Chọn màu tiếp theo</h2>
+              <p>Màu bạn chọn sẽ trở thành màu đang hoạt động.</p>
+              <div>
+                {['RED', 'BLUE', 'GREEN', 'YELLOW'].map(color => (
+                  <motion.button key={color} aria-label={`Chọn màu ${color}`} whileHover={{ scale: 1.08 }} whileTap={{ scale: .94 }} onClick={() => selectColor(color)} style={{ background: COLOR_MAP[color] }}>
+                    {color === 'RED' ? 'ĐỎ' : color === 'BLUE' ? 'XANH DƯƠNG' : color === 'GREEN' ? 'XANH LÁ' : 'VÀNG'}
+                  </motion.button>
+                ))}
+              </div>
+              <button className="uno-color-cancel" onClick={() => setChoosingColorFor(null)}>Hủy</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {gameState.pendingUnoPlayerId === currentUser?.id && (
+          <motion.button className="uno-call-button" initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, opacity: 0 }} transition={{ duration: .18 }} onClick={handleCallUno}>
+            <b>UNO!</b><span>Bấm ngay để tránh rút 2 lá</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Game Over Overlays */}
       <AnimatePresence>

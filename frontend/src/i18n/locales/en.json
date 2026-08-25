@@ -199,7 +199,10 @@
         "skip": "{{player}} was skipped!",
         "reverse": "The direction of play has been reversed!",
         "draw2": "{{player}} draws 2 cards!",
-        "draw4": "{{player}} draws 4 cards!"
+        "draw4": "{{player}} draws 4 cards!",
+        "mustCall": "⚠️ {{player}} has one card left — call UNO!",
+        "called": "📣 {{player}} called UNO!",
+        "penalty": "🚨 {{player}} forgot to call UNO and draws 2 cards!"
       }
     },
     "monopoly": {

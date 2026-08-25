@@ -1,35 +1,158 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import ChatBox from '../components/ChatBox';
+import { playGameSound } from '../services/gameAudio';
 
-export default function MonopolyPage() {
+const PREVIEW_USER = { id: 'preview-me', username: 'Bạn' };
+const previewProperty = (id, name, colorGroup, price, ownerId = null) => ({ id, name, colorGroup, price, ownerId, housePrice: 500, housesBuilt: 0, rentPrices: [50, 200, 600, 1400, 2000, 2800] });
+const PREVIEW_STATE = {
+  boardType: 'VIETNAM', phase: 'ROLL', currentTurnIndex: 0, lastDice: [3, 4], logs: ['Trò chơi Cờ Tỷ Phú bắt đầu!', 'Đến lượt của Bạn'],
+  board: {
+    1: previewProperty(1, 'Huế', 'BROWN', 600, 'preview-me'), 3: previewProperty(3, 'Hội An', 'BROWN', 600, 'preview-me'),
+    6: previewProperty(6, 'Nha Trang', 'LIGHT_BLUE', 1000), 8: previewProperty(8, 'Đà Lạt', 'LIGHT_BLUE', 1000, 'p2'), 9: previewProperty(9, 'Buôn Ma Thuột', 'LIGHT_BLUE', 1200),
+    11: previewProperty(11, 'Cần Thơ', 'PINK', 1400), 13: previewProperty(13, 'Biên Hòa', 'PINK', 1400), 14: previewProperty(14, 'Vũng Tàu', 'PINK', 1600),
+    16: previewProperty(16, 'Quy Nhơn', 'ORANGE', 1800), 18: previewProperty(18, 'Phan Thiết', 'ORANGE', 1800), 19: previewProperty(19, 'Đà Nẵng', 'ORANGE', 2000),
+    21: previewProperty(21, 'Hải Phòng', 'RED', 2200), 23: previewProperty(23, 'Vinh', 'RED', 2200), 24: previewProperty(24, 'Hạ Long', 'RED', 2400),
+    26: previewProperty(26, 'Thanh Hóa', 'YELLOW', 2600), 27: previewProperty(27, 'Nam Định', 'YELLOW', 2600), 29: previewProperty(29, 'Bắc Ninh', 'YELLOW', 2800),
+    31: previewProperty(31, 'Bình Dương', 'GREEN', 3000), 32: previewProperty(32, 'Đồng Nai', 'GREEN', 3000), 34: previewProperty(34, 'Phú Quốc', 'GREEN', 3200),
+    37: previewProperty(37, 'Hà Nội', 'DARK_BLUE', 3500), 39: previewProperty(39, 'TP HCM', 'DARK_BLUE', 4000)
+  },
+  players: [
+    { id: 'preview-me', username: 'Bạn', money: 12500, position: 0, propertiesOwned: [1, 3], bankrupt: false, isAI: false },
+    { id: 'p2', username: 'Roberta', money: 13000, position: 18, propertiesOwned: [8], bankrupt: false, isAI: true },
+    { id: 'p3', username: 'Magnus', money: 9860, position: 18, propertiesOwned: [], bankrupt: false, isAI: true },
+    { id: 'p4', username: 'Isabella', money: 13540, position: 31, propertiesOwned: [], bankrupt: false, isAI: true }
+  ]
+};
+
+export default function MonopolyPage({ preview = false }) {
   const { roomId } = useParams();
-  const { user } = useAuth();
-  const { send, subscribe, connected } = useSocket();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const currentUser = preview ? PREVIEW_USER : user;
+  const { send, subscribe, connected } = useSocket();
   const { t } = useTranslation();
 
-  const [gameState, setGameState] = useState(null);
+  const [gameState, setGameState] = useState(preview ? PREVIEW_STATE : null);
   const [selectedProp, setSelectedProp] = useState(null);
   const [activeTab, setActiveTab] = useState('board'); // 'board', 'players', 'history'
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [visualPositions, setVisualPositions] = useState({});
+  const [isAnimatingMove, setIsAnimatingMove] = useState(false);
+  const [moneyEffects, setMoneyEffects] = useState({});
+  const [transactionNotice, setTransactionNotice] = useState(null);
   const logEndRef = useRef(null);
+  const diceSoundRef = useRef('');
+  const gameStateRef = useRef(preview ? PREVIEW_STATE : null);
+  const animationTimersRef = useRef([]);
+
+  const presentGameState = useCallback((nextState) => {
+    const previous = gameStateRef.current;
+    animationTimersRef.current.forEach(window.clearTimeout);
+    animationTimersRef.current = [];
+    setIsAnimatingMove(false);
+    setVisualPositions({});
+    setTransactionNotice(null);
+    setMoneyEffects({});
+    setGameState(nextState);
+    gameStateRef.current = nextState;
+
+    if (!previous?.players || !nextState?.players) return;
+    const oldPlayers = new Map(previous.players.map(player => [player.id, player]));
+    const mover = nextState.players.find(player => {
+      const old = oldPlayers.get(player.id);
+      return old && old.position !== player.position;
+    });
+    const oldMover = mover && oldPlayers.get(mover.id);
+    const steps = mover && oldMover ? (mover.position - oldMover.position + 40) % 40 : 0;
+    const validBoardWalk = steps > 0 && steps <= 12;
+    const movementDelay = validBoardWalk ? 650 + (steps * 130) : 350;
+
+    if (validBoardWalk) {
+      setIsAnimatingMove(true);
+      setVisualPositions(current => ({ ...current, [mover.id]: oldMover.position }));
+      for (let step = 1; step <= steps; step += 1) {
+        const timer = window.setTimeout(() => {
+          setVisualPositions(current => ({ ...current, [mover.id]: (oldMover.position + step) % 40 }));
+          playGameSound('step');
+        }, 650 + (step * 130));
+        animationTimersRef.current.push(timer);
+      }
+      animationTimersRef.current.push(window.setTimeout(() => {
+        setVisualPositions(current => {
+          const updated = { ...current };
+          delete updated[mover.id];
+          return updated;
+        });
+        setIsAnimatingMove(false);
+      }, movementDelay + 140));
+    }
+
+    const changes = nextState.players
+      .map(player => ({ player, delta: player.money - (oldPlayers.get(player.id)?.money ?? player.money) }))
+      .filter(change => change.delta !== 0);
+    if (changes.length) {
+      animationTimersRef.current.push(window.setTimeout(() => {
+        const effects = Object.fromEntries(changes.map(({ player, delta }) => [player.id, delta]));
+        setMoneyEffects(effects);
+        const payer = changes.find(change => change.delta < 0);
+        const receiver = changes.find(change => change.delta > 0 && payer && change.delta === -payer.delta);
+        setTransactionNotice(receiver
+          ? `${payer.player.username} trả ${Math.abs(payer.delta)}K tiền thuê cho ${receiver.player.username}`
+          : changes.map(({ player, delta }) => `${player.username} ${delta > 0 ? '+' : ''}${delta}K`).join(' · '));
+        playGameSound('money');
+        animationTimersRef.current.push(window.setTimeout(() => {
+          setMoneyEffects({});
+          setTransactionNotice(null);
+        }, 2600));
+      }, movementDelay));
+    }
+  }, []);
 
   useEffect(() => {
+    if (preview) return undefined;
     const unsub = subscribe(`/topic/game/${roomId}`, state => {
-      setGameState(state);
+      presentGameState(state);
     });
     if (connected) {
       send(`/app/game/${roomId}/connect`, {});
     }
     return () => unsub();
-  }, [roomId, subscribe, connected, send]);
+  }, [roomId, subscribe, connected, send, preview, presentGameState]);
+
+  useEffect(() => () => animationTimersRef.current.forEach(window.clearTimeout), []);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState?.logs]);
+
+  useEffect(() => {
+    const diceKey = gameState?.lastDice?.join('-') || '';
+    if (diceSoundRef.current && diceKey && diceKey !== diceSoundRef.current) playGameSound('dice');
+    diceSoundRef.current = diceKey;
+  }, [gameState?.lastDice]);
+
+  useEffect(() => {
+    if (!gameState || !currentUser || isAnimatingMove || !['BUY', 'END_TURN'].includes(gameState.phase)) return;
+    const current = gameState.players[gameState.currentTurnIndex];
+    if (!current || current.id !== currentUser.id || current.bankrupt) return;
+    const board = Object.values(gameState.board || {});
+    const landed = gameState.board?.[current.position];
+    const canBuy = gameState.phase === 'BUY' && landed && !landed.ownerId && current.money >= landed.price;
+    const canBuild = board.some(property => {
+      if (property.ownerId !== current.id || property.housePrice <= 0 || property.housesBuilt >= 5 || current.money < property.housePrice) return false;
+      const group = board.filter(candidate => candidate.colorGroup === property.colorGroup);
+      if (group.some(candidate => candidate.ownerId !== current.id)) return false;
+      return property.housesBuilt === Math.min(...group.map(candidate => candidate.housesBuilt));
+    });
+    if (canBuy || canBuild) return;
+    const timer = window.setTimeout(() => send(`/app/game/${roomId}/monopoly/end`, {}), 2200);
+    return () => window.clearTimeout(timer);
+  }, [gameState, roomId, send, currentUser, isAnimatingMove]);
 
   if (!gameState) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -41,11 +164,38 @@ export default function MonopolyPage() {
     </div>
   );
 
-  const isMyTurn = gameState.players[gameState.currentTurnIndex]?.id === user.id;
+  const isMyTurn = gameState.players[gameState.currentTurnIndex]?.id === currentUser?.id;
 
-  const handleRoll = () => send(`/app/game/${roomId}/monopoly/roll`, {});
+  const handleRoll = () => {
+    if (!preview) {
+      send(`/app/game/${roomId}/monopoly/roll`, {});
+      return;
+    }
+    const nextState = structuredClone(gameStateRef.current);
+    const payer = nextState.players.find(player => player.id === 'preview-me');
+    const owner = nextState.players.find(player => player.id === 'p2');
+    nextState.lastDice = [3, 5];
+    nextState.hasRolled = true;
+    nextState.phase = 'END_TURN';
+    payer.position = 8;
+    payer.money -= 200;
+    owner.money += 200;
+    nextState.logs = [...nextState.logs, 'Bạn đổ xúc xắc được 8', 'Bạn trả 200k tiền thuê Đà Lạt cho Roberta'];
+    presentGameState(nextState);
+  };
   const handleBuy = () => send(`/app/game/${roomId}/monopoly/buy`, {});
-  const handleEndTurn = () => send(`/app/game/${roomId}/monopoly/end`, {});
+  const handleEndTurn = () => {
+    if (!preview) {
+      send(`/app/game/${roomId}/monopoly/end`, {});
+      return;
+    }
+    const nextState = structuredClone(gameStateRef.current);
+    nextState.phase = 'ROLL';
+    nextState.hasRolled = false;
+    nextState.lastDice = [0, 0];
+    nextState.logs = [...nextState.logs, 'Đến lượt của Bạn'];
+    presentGameState(nextState);
+  };
   const handleBuild = (propertyId) => send(`/app/game/${roomId}/monopoly/build`, { propertyId });
 
   const handlePropClick = (pos) => {
@@ -89,11 +239,6 @@ export default function MonopolyPage() {
     return offsets[playerIndex % 4];
   };
 
-  const getPlayerTileIndex = (playerId, position) => {
-    const playersOnTile = gameState.players.filter(p => !p.bankrupt && p.position === position);
-    return playersOnTile.findIndex(p => p.id === playerId);
-  };
-
   const ownsAllOfGroup = (player, property) => {
     if (!player || !property.colorGroup) return false;
     const groupProps = Object.values(gameState.board).filter(p => p.colorGroup === property.colorGroup);
@@ -101,7 +246,21 @@ export default function MonopolyPage() {
   };
 
   const currentSelectedProp = selectedProp ? gameState.board[selectedProp.id] : null;
-  const me = gameState.players.find(p => p.id === user.id);
+  const me = gameState.players.find(p => p.id === currentUser?.id);
+  const ownedDevelopableProperties = Object.values(gameState.board).filter(property =>
+    property.ownerId === currentUser?.id && property.housePrice > 0 && property.housesBuilt < 5
+  );
+  const canBuildEvenly = (property) => {
+    const group = Object.values(gameState.board).filter(candidate => candidate.colorGroup === property.colorGroup);
+    const minimumLevel = Math.min(...group.map(candidate => candidate.housesBuilt));
+    return ownsAllOfGroup(me, property) && property.housesBuilt === minimumLevel;
+  };
+  const actionableBuilds = ownedDevelopableProperties.filter(property =>
+    canBuildEvenly(property) && (me?.money || 0) >= property.housePrice
+  );
+  const landedProperty = gameState.board[me?.position];
+  const canBuyLandedProperty = gameState.phase === 'BUY' && landedProperty && !landedProperty.ownerId && (me?.money || 0) >= landedProperty.price;
+  const willAutoEnd = isMyTurn && ['BUY', 'END_TURN'].includes(gameState.phase) && !canBuyLandedProperty && actionableBuilds.length === 0;
 
   const getColorGroupColor = (colorGroup) => {
     switch (colorGroup) {
@@ -144,6 +303,9 @@ export default function MonopolyPage() {
 
   return (
     <div className="monopoly-page" style={{ position: 'relative' }}>
+      <button className="monopoly-back-btn" onClick={() => navigate('/lobby')} aria-label={t('game.backToLobby', 'Trở về sảnh')}>
+        <span>←</span><b>{t('game.back', 'Trở về')}</b>
+      </button>
       {/* Mobile Tab Bar */}
       <div className="monopoly-tabs">
         <div className={`monopoly-tab-btn ${activeTab === 'board' ? 'active' : ''}`} onClick={() => setActiveTab('board')}>
@@ -158,7 +320,7 @@ export default function MonopolyPage() {
       </div>
 
       {/* LEFT PANEL: Game Board */}
-      <div className={`monopoly-main ${activeTab === 'board' ? '' : 'tab-inactive'}`}>
+      <div className={`monopoly-main monopoly-table-scene ${activeTab === 'board' ? '' : 'tab-inactive'}`}>
         <div className="monopoly-board">
             {/* 40 Tiles Rendering */}
             {Array.from({length: 40}).map((_, i) => {
@@ -209,7 +371,7 @@ export default function MonopolyPage() {
                         {/* Houses/Hotel badge */}
                         {prop?.housesBuilt > 0 && (
                             <div className={`tile-house-badge ${orientation}`} style={{ zIndex: 8 }}>
-                                {prop.housesBuilt === 5 ? '🏨' : `🏠x${prop.housesBuilt}`}
+                                {prop.housesBuilt === 5 ? <span className="hotel-piece">🏨</span> : Array.from({ length: prop.housesBuilt }, (_, house) => <span className="house-piece" key={house}>◆</span>)}
                             </div>
                         )}
 
@@ -230,8 +392,9 @@ export default function MonopolyPage() {
                 {gameState.players.map((p, pIdx) => {
                     if (p.bankrupt) return null;
                     
-                    const coords = getPositionCoordinates(p.position);
-                    const playersOnTile = gameState.players.filter(pl => !pl.bankrupt && pl.position === p.position);
+                    const displayPosition = visualPositions[p.id] ?? p.position;
+                    const coords = getPositionCoordinates(displayPosition);
+                    const playersOnTile = gameState.players.filter(pl => !pl.bankrupt && (visualPositions[pl.id] ?? pl.position) === displayPosition);
                     const tilePlayerIndex = playersOnTile.findIndex(pl => pl.id === p.id);
                     const offset = getPlayerOffset(tilePlayerIndex, playersOnTile.length);
                     const isActive = gameState.currentTurnIndex === pIdx;
@@ -257,10 +420,22 @@ export default function MonopolyPage() {
                                 borderRadius: '50%',
                                 border: isActive ? '3px solid var(--accent-gold)' : '2px solid white',
                                 boxShadow: isActive ? '0 0 15px var(--accent-gold)' : '0 4px 8px rgba(0,0,0,0.5)',
-                                overflow: 'hidden'
+                                overflow: 'visible'
                             }}
                         >
-                            <img src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`} alt={p.username} style={{ width: '100%', height: '100%' }} />
+                            <img src={p.avatarUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=${p.username}`} alt={p.username} style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+                            <AnimatePresence>
+                              {moneyEffects[p.id] && (
+                                <motion.span
+                                  className={`money-float ${moneyEffects[p.id] > 0 ? 'gain' : 'loss'}`}
+                                  initial={{ opacity: 0, y: 8, scale: .8 }}
+                                  animate={{ opacity: 1, y: -8, scale: 1 }}
+                                  exit={{ opacity: 0, y: -22 }}
+                                >
+                                  {moneyEffects[p.id] > 0 ? '+' : ''}{moneyEffects[p.id]}K
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
                         </motion.div>
                     );
                 })}
@@ -303,6 +478,16 @@ export default function MonopolyPage() {
                         ))}
                     </div>
                 )}
+
+                <AnimatePresence>
+                  {transactionNotice && (
+                    <motion.div className="transaction-notice" initial={{ opacity: 0, y: 10, scale: .94 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10 }}>
+                      <b>💸 Giao dịch</b><span>{transactionNotice}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {isAnimatingMove && <div className="movement-status">Đang di chuyển từng ô…</div>}
 
                 {gameState.phase === 'GAME_OVER' ? (
                   <motion.div 
@@ -349,7 +534,7 @@ export default function MonopolyPage() {
               whileHover={isMyTurn && gameState.phase === 'ROLL' ? { scale: 1.03 } : {}}
               whileActive={isMyTurn && gameState.phase === 'ROLL' ? { scale: 0.98 } : {}}
               className={`btn ${isMyTurn && gameState.phase === 'ROLL' ? 'btn-roll-active' : 'btn-secondary'}`} 
-              disabled={!isMyTurn || gameState.phase !== 'ROLL' || me?.bankrupt} 
+              disabled={!isMyTurn || isAnimatingMove || gameState.phase !== 'ROLL' || me?.bankrupt}
               onClick={handleRoll}
               style={{
                 borderRadius: 16,
@@ -360,28 +545,32 @@ export default function MonopolyPage() {
             >
                 🎲 {t('game.monopoly.rollDice', 'Đổ Xúc Xắc')}
             </motion.button>
-            
-            <motion.button 
-              whileHover={isMyTurn && gameState.phase === 'BUY' ? { scale: 1.03 } : {}}
-              whileActive={isMyTurn && gameState.phase === 'BUY' ? { scale: 0.98 } : {}}
-              className={`btn ${isMyTurn && gameState.phase === 'BUY' ? 'btn-buy-active' : 'btn-secondary'}`} 
-              disabled={!isMyTurn || gameState.phase !== 'BUY' || me?.bankrupt} 
-              onClick={handleBuy}
+
+            <motion.button
+              whileHover={isMyTurn && (canBuyLandedProperty || ownedDevelopableProperties.length) ? { scale: 1.03 } : {}}
+              whileActive={isMyTurn && (canBuyLandedProperty || ownedDevelopableProperties.length) ? { scale: 0.98 } : {}}
+              className={`btn ${canBuyLandedProperty ? 'btn-buy-active' : actionableBuilds.length ? 'btn-build-active' : 'btn-secondary'}`}
+              disabled={!isMyTurn || isAnimatingMove || (!canBuyLandedProperty && ownedDevelopableProperties.length === 0) || me?.bankrupt}
+              onClick={() => canBuyLandedProperty ? handleBuy() : setSelectedProp(actionableBuilds[0] || ownedDevelopableProperties[0])}
               style={{
                 borderRadius: 16,
-                padding: '14px 28px',
+                padding: '14px 22px',
                 fontWeight: 900,
                 flex: 1
               }}
             >
-                💰 {t('game.monopoly.buyProperty', 'Mua Đất')}
+              {canBuyLandedProperty
+                ? `💰 ${t('game.monopoly.buyProperty', 'Mua đất')} · ${landedProperty.price}K`
+                : actionableBuilds.length
+                  ? `🏗️ ${t('game.monopoly.buildHouse', 'Xây nhà')} (${actionableBuilds.length})`
+                  : `🏘️ ${t('game.monopoly.manageProperty', 'Quản lý đất')}`}
             </motion.button>
             
             <motion.button 
               whileHover={isMyTurn && (gameState.phase === 'END_TURN' || gameState.phase === 'BUY') ? { scale: 1.03 } : {}}
               whileActive={isMyTurn && (gameState.phase === 'END_TURN' || gameState.phase === 'BUY') ? { scale: 0.98 } : {}}
               className={`btn ${isMyTurn && (gameState.phase === 'END_TURN' || gameState.phase === 'BUY') ? 'btn-end-active' : 'btn-secondary'}`} 
-              disabled={!isMyTurn || (gameState.phase !== 'END_TURN' && gameState.phase !== 'BUY') || me?.bankrupt} 
+              disabled={!isMyTurn || isAnimatingMove || (gameState.phase !== 'END_TURN' && gameState.phase !== 'BUY') || me?.bankrupt}
               onClick={handleEndTurn}
               style={{
                 borderRadius: 16,
@@ -392,6 +581,7 @@ export default function MonopolyPage() {
             >
                 ⏭ {t('game.monopoly.endTurn', 'Lượt Kế')}
             </motion.button>
+            {willAutoEnd && <div className="monopoly-auto-end"><span /> Không còn hành động · tự chuyển lượt...</div>}
         </div>
       </div>
 
@@ -465,13 +655,16 @@ export default function MonopolyPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                             <span>{t('game.monopoly.with3Houses', 'Có 3 Nhà')}</span> <strong style={{ color: 'var(--text-primary)' }}>{currentSelectedProp.rentPrices[3]}K</strong>
                         </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                            <span>{t('game.monopoly.with4Houses', 'Có 4 Nhà')}</span> <strong style={{ color: 'var(--text-primary)' }}>{currentSelectedProp.rentPrices[4]}K</strong>
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                             <span>{t('game.monopoly.withHotel', 'Có Khách Sạn')}</span> <strong style={{ color: 'var(--text-primary)' }}>{currentSelectedProp.rentPrices[5]}K</strong>
                         </div>
                     </div>
 
                     {/* Build Button if owner owns color monopoly */}
-                    {currentSelectedProp.housePrice > 0 && currentSelectedProp.ownerId === user.id && currentSelectedProp.housesBuilt < 5 && (
+                    {currentSelectedProp.housePrice > 0 && currentSelectedProp.ownerId === currentUser?.id && currentSelectedProp.housesBuilt < 5 && (
                       ownsAllOfGroup(me, currentSelectedProp) ? (
                         <motion.button 
                             whileHover={{ scale: 1.02 }}
@@ -488,7 +681,7 @@ export default function MonopolyPage() {
                                 cursor: 'pointer',
                                 boxShadow: '0 4px 12px rgba(16,185,129,0.2)'
                             }} 
-                            disabled={!isMyTurn || (me?.money || 0) < currentSelectedProp.housePrice}
+                            disabled={!isMyTurn || (me?.money || 0) < currentSelectedProp.housePrice || !canBuildEvenly(currentSelectedProp)}
                             onClick={() => handleBuild(currentSelectedProp.id)}
                         >
                             🔨 {t('game.monopoly.build', { 
@@ -519,7 +712,8 @@ export default function MonopolyPage() {
       </AnimatePresence>
 
       {/* RIGHT PANEL: Players & Logs */}
-      <div className={`monopoly-sidebar ${activeTab === 'players' || activeTab === 'history' ? '' : 'tab-inactive'} ${activeTab === 'players' ? 'tab-players' : 'tab-history'}`}>
+      <div className={`monopoly-sidebar ${sidePanelOpen ? 'is-open' : 'is-closed'} ${activeTab === 'players' || activeTab === 'history' ? '' : 'tab-inactive'} ${activeTab === 'players' ? 'tab-players' : 'tab-history'}`}>
+        <button className="panel-minimize monopoly-panel-minimize" onClick={() => setSidePanelOpen(false)} aria-label="Thu nhỏ thông tin bàn">×</button>
         
         {/* Players List */}
         <div className="monopoly-players-section" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -530,7 +724,7 @@ export default function MonopolyPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ fontWeight: 900, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
                               <span style={{ width: 10, height: 10, borderRadius: '50%', background: getColorGroupColor(`player-${idx}`), display: 'inline-block' }} />
-                              {p.username} {p.id === user.id && <span style={{ color: 'var(--accent-cyan)' }}>({t('game.you', 'Bạn')})</span>}
+                              {p.username} {p.id === currentUser?.id && <span style={{ color: 'var(--accent-cyan)' }}>({t('game.you', 'Bạn')})</span>}
                               {p.isAI && <span className="badge" style={{ fontSize: '0.55rem', background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)' }}>AI</span>}
                             </div>
                             <div style={{ color: p.bankrupt ? 'var(--text-muted)' : 'var(--accent-green)', fontWeight: 900, fontSize: '1.1rem' }}>
@@ -605,6 +799,12 @@ export default function MonopolyPage() {
             </div>
         </div>
       </div>
+      {!sidePanelOpen && (
+        <button className="monopoly-info-popup" onClick={() => setSidePanelOpen(true)} aria-label="Mở người chơi và lịch sử">
+          <span>👥</span><b>Thông tin bàn</b>
+        </button>
+      )}
+      <ChatBox roomId={roomId || 'preview-monopoly'} />
     </div>
   );
 }

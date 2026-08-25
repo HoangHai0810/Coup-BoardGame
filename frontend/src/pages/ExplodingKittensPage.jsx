@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import ChatBox from '../components/ChatBox';
 import TurnTimer from '../components/TurnTimer';
+import { playGameSound } from '../services/gameAudio';
 
 const CARD_EMOJIS = {
   EXPLODING_KITTEN: '💣',
@@ -46,6 +47,19 @@ const CAT_POSITIONS = {
   CAT_MELON: '100% 0%'
 };
 
+function formatKittensLog(log, t) {
+  if (typeof log === 'string') return log;
+  const key = log.key.startsWith('game.logs.') ? log.key : `game.kittens.logs.${log.key.replace('kittens.logs.', '')}`;
+  const params = {
+    player: 'Người chơi',
+    target: 'người chơi tiếp theo',
+    card: 'lá đã chọn',
+    ...log.params
+  };
+  if (log.params?.card) params.card = t(`game.kittens.cards.${log.params.card}`, log.params.card);
+  return t(key, params).replace(/\{\{[^}]+\}\}/g, '');
+}
+
 const CARD_COLORS = {
   EXPLODING_KITTEN: '#ef4444',
   DEFUSE: '#10b981',
@@ -76,37 +90,63 @@ const CARD_GLOWS = {
   CAT_MELON: 'rgba(34,197,94,0.2)'
 };
 
-export default function ExplodingKittensPage() {
+const PREVIEW_USER = { id: 'preview-me', username: 'Bạn', avatarUrl: '' };
+const PREVIEW_STATE = {
+  gameType: 'KITTENS', phase: 'PLAYER_TURN', currentPlayerId: 'preview-me', turnsLeft: 1,
+  drawPileCount: 19, discardTop: 'ATTACK', futureCards: [],
+  players: [
+    { id: 'preview-me', username: 'Bạn', avatarUrl: '', handCount: 6, exploded: false },
+    { id: 'p2', username: 'Roberta', avatarUrl: '', handCount: 6, exploded: false },
+    { id: 'p3', username: 'Magnus', avatarUrl: '', handCount: 6, exploded: false },
+    { id: 'p4', username: 'Isabella', avatarUrl: '', handCount: 5, exploded: false },
+    { id: 'p5', username: 'Viktor', avatarUrl: '', handCount: 7, exploded: false }
+  ],
+  actionLog: [
+    { key: 'kittens.logs.draw', params: { player: 'Isabella' } },
+    { key: 'kittens.logs.attack', params: { player: 'Viktor' } },
+    { key: 'kittens.logs.shuffle', params: { player: 'Roberta' } }
+  ]
+};
+const PREVIEW_HAND = ['DEFUSE', 'NOPE', 'ATTACK', 'SEE_THE_FUTURE', 'CAT_MELON', 'SHUFFLE'];
+
+export default function ExplodingKittensPage({ preview = false }) {
   const { roomId } = useParams();
   const { user } = useAuth();
   const { subscribe, send, connected } = useSocket();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const [gameState, setGameState] = useState(null);
-  const [myHand, setMyHand] = useState([]);
+  const currentUser = preview ? PREVIEW_USER : user;
+  const [gameState, setGameState] = useState(preview ? PREVIEW_STATE : null);
+  const [myHand, setMyHand] = useState(preview ? PREVIEW_HAND : []);
   const [targetAction, setTargetAction] = useState(null);
   const [selectedCards, setSelectedCards] = useState([]);
-  const [requestedCard, setRequestedCard] = useState(null);
+  const [requestedCard] = useState(null);
+  const [logOpen, setLogOpen] = useState(true);
   const logEndRef = useRef(null);
+  const soundLogRef = useRef(0);
 
   useEffect(() => {
+    if (preview) return;
     const unsub1 = subscribe(`/topic/game/${roomId}`, data => {
       if (data.gameType === 'KITTENS') {
         setGameState(data);
       }
     });
-    const unsub2 = subscribe(`/topic/game/${roomId}/private/${user?.id}`, data => {
+    const unsub2 = subscribe(`/topic/game/${roomId}/private/${currentUser?.id}`, data => {
       setMyHand(data.hand || []);
     });
     if (connected) {
       send(`/app/game/${roomId}/connect`, {});
     }
     return () => { unsub1(); unsub2(); };
-  }, [roomId, user?.id, subscribe, send, connected]);
+  }, [roomId, currentUser?.id, subscribe, send, connected, preview]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const length = gameState?.actionLog?.length || 0;
+    if (soundLogRef.current && length > soundLogRef.current) playGameSound('card');
+    soundLogRef.current = length;
   }, [gameState?.actionLog]);
 
   if (!gameState) return (
@@ -120,9 +160,8 @@ export default function ExplodingKittensPage() {
     </div>
   );
 
-  const isMyTurn = gameState.currentPlayerId === user?.id;
-  const me = gameState.players?.find(p => p.id === user?.id);
-  const others = gameState.players?.filter(p => p.id !== user?.id) || [];
+  const isMyTurn = gameState.currentPlayerId === currentUser?.id;
+  const others = gameState.players?.filter(p => p.id !== currentUser?.id) || [];
 
   const handlePlayCard = (card, index) => {
     if (!isMyTurn) return;
@@ -187,17 +226,18 @@ export default function ExplodingKittensPage() {
   };
 
   return (
-    <div className="page" style={{ 
+    <div className="page kittens-table-page" style={{
       height: '100vh', display: 'flex', flexDirection: 'column', 
       background: 'linear-gradient(135deg, #150808 0%, #060810 100%)',
       overflow: 'hidden', position: 'relative'
     }}>
+      <button className="game-back-btn" onClick={() => navigate('/lobby')}><span>←</span> Trở về</button>
       {/* Background glow effects */}
       <div style={{ position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '400px', background: isMyTurn ? 'var(--accent-red)' : 'transparent', opacity: 0.05, filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none', transition: 'all 0.5s ease' }} />
 
       <Navbar />
 
-      <div className="game-board-container" style={{ position: 'relative', zIndex: 2 }}>
+      <div className="game-board-container kittens-table-scene" style={{ position: 'relative', zIndex: 2 }}>
         
         {/* Opponents Row */}
         <div className="opponents-row" style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
@@ -258,7 +298,7 @@ export default function ExplodingKittensPage() {
           <TurnTimer 
             currentPlayerId={gameState.currentPlayerId} 
             currentPlayerName={gameState.players.find(p => p.id === gameState.currentPlayerId)?.username || ''}
-            currentUserId={user?.id}
+            currentUserId={currentUser?.id}
             isActive={gameState.phase !== 'GAME_OVER'}
           />
           
@@ -333,8 +373,8 @@ export default function ExplodingKittensPage() {
             </div>
           </div>
 
-          <div className="kittens-sidebar">
-            {/* Action Log Floating */}
+          <div className={`kittens-sidebar ${logOpen ? 'is-open' : 'is-closed'}`}>
+            {logOpen ? (
             <div className="card glass" style={{ 
               maxHeight: 280, 
               background: 'var(--bg-card)', 
@@ -345,16 +385,10 @@ export default function ExplodingKittensPage() {
               boxShadow: 'var(--shadow-sm)',
               border: '1px solid var(--border)'
             }}>
-              <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.95rem', fontWeight: 800 }}>📜 {t('game.actionLog', 'LỊCH SỬ')}</h4>
+              <h4 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.95rem', fontWeight: 800 }}>📜 {t('game.actionLog', 'LỊCH SỬ')}<button className="panel-minimize" onClick={() => setLogOpen(false)} aria-label="Thu nhỏ nhật ký">—</button></h4>
               <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
                 {gameState.actionLog.slice(-15).map((log, i) => {
-                  const translationKey = log.key.startsWith('game.logs.')
-                    ? log.key
-                    : `game.kittens.logs.${log.key.replace('kittens.logs.', '')}`;
-                  const text = typeof log === 'string' ? log : t(translationKey, {
-                    ...log.params,
-                    card: log.params?.card ? t(`game.kittens.cards.${log.params.card}`) : ''
-                  });
+                  const text = formatKittensLog(log, t);
                   return (
                     <div key={i} style={{ 
                       padding: '8px 12px', 
@@ -372,10 +406,9 @@ export default function ExplodingKittensPage() {
                 <div ref={logEndRef} />
               </div>
             </div>
-
-            {/* Chat Box Mini */}
-            <ChatBox roomId={roomId} />
+            ) : <button className="log-popup-button" onClick={() => setLogOpen(true)}>📜<span>Nhật ký</span></button>}
           </div>
+          <ChatBox roomId={roomId || 'preview-room'} />
         </div>
 
         {/* Modals for Action Responses */}
@@ -439,7 +472,7 @@ export default function ExplodingKittensPage() {
             </motion.div>
           )}
 
-          {gameState.phase === 'AWAITING_FAVOR' && gameState.favorTargetId === user?.id && (
+          {gameState.phase === 'AWAITING_FAVOR' && gameState.favorTargetId === currentUser?.id && (
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
@@ -601,7 +634,7 @@ export default function ExplodingKittensPage() {
         )}
       </AnimatePresence>
 
-      <style jsx>{`
+      <style>{`
         .player-seat {
             padding: 16px;
             border-radius: 24px;

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -7,7 +7,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
   });
-  const [loading, setLoading] = useState(false);
 
   const login = async (usernameOrEmail, password) => {
     const res = await api.post('/auth/login', { usernameOrEmail, password });
@@ -32,7 +31,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading: false }}>
       {children}
     </AuthContext.Provider>
   );

@@ -55,19 +55,27 @@ public class CoupWebSocketController {
     @MessageMapping("/game/{roomId}/allow")
     public void handleAllow(@DestinationVariable String roomId, Authentication auth) {
         UserEntity user  = (UserEntity) auth.getPrincipal();
-        GameState  state = coupGameService.allowAction(roomId, user.getId().toString());
-        broadcastState(roomId, state);
-        scheduleAIResponseIfNeeded(roomId, state);
-        scheduleAITurnIfNeeded(roomId, state);
+        try {
+            GameState state = coupGameService.allowAction(roomId, user.getId().toString());
+            broadcastState(roomId, state);
+            scheduleAIResponseIfNeeded(roomId, state);
+            scheduleAITurnIfNeeded(roomId, state);
+        } catch (Exception e) {
+            sendError(roomId, user.getId().toString(), e.getMessage());
+        }
     }
 
     @MessageMapping("/game/{roomId}/challenge")
     public void handleChallenge(@DestinationVariable String roomId, Authentication auth) {
         UserEntity user  = (UserEntity) auth.getPrincipal();
-        GameState  state = coupGameService.challenge(roomId, user.getId().toString());
-        broadcastState(roomId, state);
-        scheduleAIResponseIfNeeded(roomId, state);
-        scheduleAITurnIfNeeded(roomId, state);
+        try {
+            GameState state = coupGameService.challenge(roomId, user.getId().toString());
+            broadcastState(roomId, state);
+            scheduleAIResponseIfNeeded(roomId, state);
+            scheduleAITurnIfNeeded(roomId, state);
+        } catch (Exception e) {
+            sendError(roomId, user.getId().toString(), e.getMessage());
+        }
     }
 
     @MessageMapping("/game/{roomId}/block")

@@ -114,7 +114,7 @@ export default function Home() {
   const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
   const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
 
-  const handlePlay = (game) => {
+  const handlePlay = () => {
     if (!user) { toast(t('nav.login'), { icon: '🔒' }); navigate('/login'); return; }
     navigate('/lobby');
   };

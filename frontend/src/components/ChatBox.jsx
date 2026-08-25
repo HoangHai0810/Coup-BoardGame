@@ -12,7 +12,6 @@ export default function ChatBox({ roomId = 'global', mode = roomId === 'global' 
     const [unreadCount, setUnreadCount] = useState(0);
     const [wiggleState, setWiggleState] = useState('idle');
     const scrollRef = useRef();
-    const firstMessageRef = useRef(true);
 
     useEffect(() => {
         if (!connected) return;

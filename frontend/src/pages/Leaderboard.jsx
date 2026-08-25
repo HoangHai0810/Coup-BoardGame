@@ -22,7 +22,7 @@ export default function Leaderboard() {
       try {
         const res = await api.get(`/leaderboard/${activeTab}`);
         setLeaders(res.data);
-      } catch (err) {
+      } catch {
         toast.error("Không thể tải bảng xếp hạng");
       } finally {
         setLoading(false);
@@ -123,7 +123,7 @@ export default function Leaderboard() {
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: 16, padding: '24px 0 16px 0', borderBottom: '1px solid var(--border)', minHeight: 280 }}>
                   <AnimatePresence>
                     {/* Render Rank 2, then Rank 1, then Rank 3 */}
-                    {podiumOrder.map(({ player, rank, height, medal, color, delay, glow }) => (
+                    {podiumOrder.map(({ player, rank, height, medal, delay, glow }) => (
                       <motion.div
                         key={player.id}
                         initial={{ opacity: 0, y: 50 }}

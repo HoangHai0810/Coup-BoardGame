@@ -16,7 +16,6 @@ const GAME_TYPES = [
   { type: 'MONOPOLY', icon: '🎩', name: 'Monopoly', color: '#3b82f6', defaultMax: 4 },
 ];
 
-const STATUS_COLORS = { COUP: '#a855f7', KITTENS: '#f97316', UNO: '#34d399', MONOPOLY: '#60a5fa' };
 
 export default function Lobby() {
   const { user } = useAuth();
@@ -53,7 +52,7 @@ export default function Lobby() {
   };
 
   const fetchOnlineUsers = async () => {
-    try { const res = await api.get('/users/online'); setOnlineUsers(res.data); } catch {}
+    try { const res = await api.get('/users/online'); setOnlineUsers(res.data); } catch { setOnlineUsers([]); }
   };
 
   useEffect(() => {

@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
-import api from '../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import ChatBox from '../components/ChatBox';
 import TurnTimer from '../components/TurnTimer';
+import { playGameSound } from '../services/gameAudio';
 
 const CARD_IMAGES = {
   DUKE: '/assets/coup_duke_card_1777970293754.png',
@@ -39,15 +39,14 @@ export default function CoupGamePage() {
 
   const [gameState, setGameState] = useState(null);
   const [myCards, setMyCards] = useState([]);
-  const [selectedTarget, setSelectedTarget] = useState(null);
   const [targetAction, setTargetAction] = useState(null);
   const logEndRef = useRef(null);
+  const soundLogRef = useRef(0);
 
   useEffect(() => {
     const unsub1 = subscribe(`/topic/game/${roomId}`, state => {
       setGameState(state);
       if (state.phase === 'PLAYER_TURN') {
-        setSelectedTarget(null);
         setTargetAction(null);
       }
     });
@@ -64,6 +63,9 @@ export default function CoupGamePage() {
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const length = gameState?.actionLog?.length || 0;
+    if (soundLogRef.current && length > soundLogRef.current) playGameSound('action');
+    soundLogRef.current = length;
   }, [gameState?.actionLog]);
 
   const sendAction = useCallback((action, targetId = null) => {
@@ -81,10 +83,8 @@ export default function CoupGamePage() {
 
   const handleTargetSelect = (playerId) => {
     if (targetAction) {
-      setSelectedTarget(playerId);
       sendAction(targetAction, playerId);
       setTargetAction(null);
-      setSelectedTarget(null);
     }
   };
 
@@ -94,13 +94,6 @@ export default function CoupGamePage() {
   const handleChooseCard = (cardType) => send(`/app/game/${roomId}/choose-card`, { card: cardType });
   const handleExchange   = (keepCards) => send(`/app/game/${roomId}/exchange`, { keepCards });
   
-  const handleLeave = async () => {
-    try {
-      await api.post(`/rooms/${roomId}/leave`);
-    } catch (err) {}
-    navigate('/lobby');
-  };
-
   if (!gameState) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 16, background: 'var(--bg-base)' }}>
@@ -123,17 +116,18 @@ export default function CoupGamePage() {
   const others = gameState.players?.filter(p => p.id !== user?.id) || [];
 
   return (
-    <div className="page" style={{ 
+    <div className="page coup-game-page" style={{
       height: '100vh', display: 'flex', flexDirection: 'column', 
       background: 'var(--bg-base)', overflow: 'hidden', position: 'relative' 
     }}>
+      <button className="game-back-btn" onClick={() => navigate('/lobby')}><span>←</span> Trở về</button>
       {/* Background Neon Effects */}
       <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '400px', background: isMyTurn ? 'var(--accent-primary)' : 'transparent', opacity: 0.05, filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none', transition: 'all 0.5s ease' }} />
 
       <Navbar />
       
       {/* Main Game Layout */}
-      <div style={{ 
+      <div className="coup-arena" style={{
         flex: 1, display: 'flex', flexDirection: 'column', 
         padding: '20px 40px', gap: 20, minHeight: 0, position: 'relative', zIndex: 2
       }}>
@@ -144,7 +138,7 @@ export default function CoupGamePage() {
           height: '180px', flexShrink: 0 
         }}>
           <AnimatePresence>
-            {others.map((p, i) => {
+            {others.map((p) => {
               const isCurrentTurn = gameState.currentPlayerId === p.id;
               const isTargetSelectable = targetAction && !p.eliminated;
               return (
@@ -605,7 +599,8 @@ function ResponsePanel({ pendingAction, players, userId, phase, onChallenge, onB
   }
 
   const blockCards = { FOREIGN_AID: ['DUKE'], ASSASSINATE: ['CONTESSA'], STEAL: ['CAPTAIN', 'AMBASSADOR'] };
-  const canBlock = !isBlockPhase && pendingAction.targetId === userId && blockCards[pendingAction.actionType];
+  const canBlock = !isBlockPhase && blockCards[pendingAction.actionType] &&
+    (pendingAction.actionType === 'FOREIGN_AID' || pendingAction.targetId === userId);
 
   return (
     <div style={{ 

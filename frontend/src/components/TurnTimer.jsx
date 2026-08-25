@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function TurnTimer({ currentPlayerId, currentPlayerName, currentUserId, isActive = true }) {
   const [timeLeft, setTimeLeft] = useState(30);

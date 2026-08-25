@@ -1255,6 +1255,7 @@ label {
 .monopoly-controls button:not(:disabled):hover { transform: translateY(-2px); }
 .monopoly-controls button.btn-roll-active { background: linear-gradient(135deg, #38bdf8, #0284c7) !important; border: 1px solid #38bdf8 !important; color: white !important; box-shadow: 0 0 20px rgba(56,189,248,0.4) !important; }
 .monopoly-controls button.btn-buy-active  { background: linear-gradient(135deg, #10b981, #059669) !important; border: 1px solid #10b981 !important; color: white !important; box-shadow: 0 0 20px rgba(16,185,129,0.4) !important; }
+.monopoly-controls button.btn-build-active { background: linear-gradient(135deg, #f59e0b, #b45309) !important; border: 1px solid #fbbf24 !important; color: white !important; box-shadow: 0 0 20px rgba(245,158,11,.35) !important; }
 .monopoly-controls button.btn-end-active  { background: linear-gradient(135deg, #f59e0b, #d97706) !important; border: 1px solid #f59e0b !important; color: white !important; box-shadow: 0 0 20px rgba(245,158,11,0.4) !important; }
 .monopoly-player-card {
   padding: 14px 18px;
@@ -1340,3 +1341,304 @@ label {
   .btn-ghost, .btn-primary { padding: 6px 10px !important; font-size: 0.8rem !important; }
   .language-switcher span { display: none !important; }
 }
+
+/* Immersive waiting room */
+.room-page { min-height: 100vh; overflow-x: hidden; background: radial-gradient(circle at 50% 18%, #35241d 0, #151316 38%, #080a10 76%); color: var(--text-primary); }
+.room-shell { width: min(1500px, 100%); margin: 0 auto; padding: 22px 28px 30px; }
+.room-topbar { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+.room-topbar h1 { margin: 5px 0 0; font: 900 clamp(1.6rem, 3vw, 2.6rem)/1 var(--font-display); }
+.room-eyebrow { color: #e8b86b; text-transform: uppercase; letter-spacing: .18em; font-weight: 900; font-size: .78rem; }
+.room-code { display: grid; grid-template-columns: 1fr auto; gap: 0 14px; text-align: left; min-width: 190px; padding: 10px 15px; border: 1px solid rgba(232,184,107,.35); border-radius: 14px; color: #fff; background: rgba(10,10,12,.72); cursor: pointer; box-shadow: inset 0 1px rgba(255,255,255,.06); }
+.room-code span { grid-column: 1; color: #b9a78e; font-size: .65rem; letter-spacing: .12em; text-transform: uppercase; }
+.room-code strong { grid-column: 1; font: 900 1.15rem var(--font-mono); letter-spacing: .08em; }
+.room-code b { grid-column: 2; grid-row: 1 / 3; align-self: center; color: #e8b86b; font-size: 1.25rem; }
+.room-content { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 20px; }
+.waiting-table-wrap { min-height: 680px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.08); border-radius: 28px; background: linear-gradient(#211b1b 0 27%, #100f12 27% 100%); box-shadow: 0 28px 70px rgba(0,0,0,.48); }
+.lounge-backdrop { position: absolute; inset: 0 0 auto; height: 36%; display: flex; justify-content: space-around; align-items: end; padding: 0 5%; background: repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 2px, transparent 2px 110px), linear-gradient(#171316, #2d211d); border-bottom: 8px solid #0a090b; }
+.lounge-backdrop i { display: block; width: 25%; height: 54%; border-radius: 30px 30px 8px 8px; background: linear-gradient(145deg, #594237, #302521 58%, #181514); border: 2px solid #171211; box-shadow: inset 12px 10px 20px rgba(255,255,255,.04), 0 12px 24px #000; }
+.waiting-table { position: absolute; width: min(78%, 830px); aspect-ratio: 1.62; left: 50%; top: 52%; transform: translate(-50%, -50%) perspective(900px) rotateX(11deg); border: clamp(18px, 3vw, 34px) solid #38271d; border-radius: 26% / 18%; background: #111; box-shadow: inset 0 0 0 5px #160f0b, inset 0 0 28px #000, 0 35px 36px rgba(0,0,0,.8), 0 4px 0 #72513b; }
+.table-inlay { position: absolute; inset: 0; overflow: hidden; border-radius: 19% / 12%; background: radial-gradient(ellipse at center, rgba(255,255,255,.12), transparent 62%), linear-gradient(135deg, #176043, #0a3a2c); box-shadow: inset 0 0 45px rgba(0,0,0,.68), inset 0 0 0 2px rgba(218,178,102,.3); }
+.table-inlay::after { content: ''; position: absolute; inset: 0; opacity: .22; background-image: repeating-linear-gradient(28deg, transparent 0 7px, rgba(255,255,255,.035) 8px); }
+.table-center-mark { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(240,215,166,.58); text-transform: uppercase; letter-spacing: .16em; transform: rotateX(-8deg); }
+.table-center-mark span { font-size: 2.5rem; }.table-center-mark strong { font: 900 1.25rem var(--font-display); }.table-center-mark small { margin-top: 8px; font-size: .62rem; }
+.table-seat { position: absolute; z-index: 3; width: 150px; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 12px 10px rgba(0,0,0,.7)); transform: rotateX(-11deg); }
+.table-avatar { width: 66px; height: 66px; object-fit: cover; border-radius: 50%; border: 3px solid #8c765a; background: #15181c; box-shadow: 0 0 0 4px #171416; }
+.table-avatar-fallback { display: grid; place-items: center; color: #f4d6a2; font-size: 1.65rem; font-weight: 900; background: linear-gradient(145deg, #704f31, #2b2320); }
+.seat-name { max-width: 100%; min-width: 105px; padding: 7px 12px; margin-top: -2px; text-align: center; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; background: linear-gradient(#242326, #0e0e10); }
+.seat-name strong, .seat-name span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.seat-name strong { font-size: .85rem; }.seat-name span { color: #caa66d; margin-top: 2px; font-size: .56rem; text-transform: uppercase; letter-spacing: .08em; }
+.table-seat.is-me .table-avatar { border-color: #f5bd5b; box-shadow: 0 0 0 4px #171416, 0 0 22px rgba(245,189,91,.6); }
+.empty-seat { opacity: .58; }.empty-avatar { display: grid; place-items: center; width: 55px; height: 55px; border: 2px dashed #a78e6e; border-radius: 50%; color: #cbb897; font-size: 1.7rem; }.empty-seat > span { margin-top: 7px; font-size: .7rem; color: #b5aa9c; }
+.seat-0 { left: 50%; top: -20%; transform: translateX(-50%) rotateX(-11deg); }.seat-1 { right: -15%; top: 10%; }.seat-2 { right: -15%; bottom: 5%; }.seat-3 { left: 50%; bottom: -24%; transform: translateX(-50%) rotateX(-11deg); }.seat-4 { left: -15%; bottom: 5%; }.seat-5 { left: -15%; top: 10%; }
+.room-actions { position: absolute; z-index: 5; bottom: 20px; left: 24px; right: 24px; display: flex; justify-content: center; gap: 12px; }.room-start { min-width: 230px; background: linear-gradient(135deg, #d29b45, #8b541f) !important; }.room-leave { color: #e9d8c4; border: 1px solid rgba(255,255,255,.15); background: rgba(8,8,10,.78); }.waiting-message { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 14px; color: #ddc9aa; background: rgba(8,8,10,.78); }.waiting-message i { width: 9px; height: 9px; border-radius: 50%; background: #e8b86b; animation: online-pulse 1.5s infinite; }
+.room-chat { min-height: 680px; }.room-chat > * { height: 100%; max-height: 680px; }
+.game-loading { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 14px; color: var(--text-secondary); background: var(--bg-base); }.game-loading-spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,.1); border-top-color: #e8b86b; border-radius: 50%; animation: spin 1s linear infinite; }
+@media (max-width: 1050px) { .room-content { grid-template-columns: 1fr; }.room-chat { min-height: 420px; }.room-chat > * { max-height: 420px; } }
+@media (max-width: 700px) { .room-shell { padding: 14px 10px 20px; }.room-topbar { align-items: stretch; flex-direction: column; }.room-code { width: 100%; }.waiting-table-wrap { min-height: 570px; }.waiting-table { width: 72%; top: 48%; }.table-seat { width: 100px; }.table-avatar { width: 48px; height: 48px; }.seat-name { min-width: 88px; padding: 5px 7px; }.seat-name strong { font-size: .7rem; }.seat-1,.seat-2 { right: -23%; }.seat-4,.seat-5 { left: -23%; }.room-actions { left: 10px; right: 10px; flex-wrap: wrap; }.room-start { min-width: 190px; } }
+
+/* Coup viewed from the player's seat */
+.coup-game-page { background: radial-gradient(ellipse at 50% 22%, #34251d 0, #121014 40%, #07090d 82%) !important; }
+.coup-arena::before { content: ''; position: absolute; z-index: -1; left: 7%; right: 7%; top: 14%; bottom: 5%; border: 26px solid #3a281d; border-radius: 30% / 19%; background: radial-gradient(ellipse, rgba(255,255,255,.08), transparent 64%), linear-gradient(135deg, #185e43, #073627); box-shadow: inset 0 0 55px #031c15, inset 0 0 0 3px rgba(221,174,99,.25), 0 30px 55px #000; transform: perspective(1100px) rotateX(5deg); }
+.coup-game-page .opponents-row { position: relative; z-index: 3; }
+.coup-game-page .player-seat { background: linear-gradient(145deg, rgba(33,32,35,.96), rgba(10,10,12,.96)) !important; border-color: rgba(218,177,109,.25) !important; box-shadow: 0 14px 30px rgba(0,0,0,.55) !important; }
+.coup-game-page .game-center-col > .card, .coup-game-page .game-left-col > .card, .coup-game-page .game-right-col > .card { backdrop-filter: blur(15px); background: rgba(8,10,11,.82) !important; }
+@media (max-width: 992px) { .coup-arena::before { display: none; } }
+
+/* Shared immersive digital tabletop language */
+.uno-table-page,
+.kittens-table-page {
+  color-scheme: dark;
+  isolation: isolate;
+}
+.uno-table-page { background: radial-gradient(ellipse at 50% 12%, #28415c 0, #111b2a 34%, #070a10 78%) !important; }
+.kittens-table-page { background: radial-gradient(ellipse at 50% 10%, #5b2018 0, #21100f 35%, #080809 80%) !important; }
+.uno-table-scene,
+.kittens-table-scene { isolation: isolate; perspective: 1100px; }
+.uno-table-scene::before,
+.kittens-table-scene::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  left: 10%; right: 10%; top: 13%; bottom: 10%;
+  border: clamp(20px, 3vw, 42px) solid #4b3020;
+  border-radius: 28% / 18%;
+  transform: perspective(1200px) rotateX(7deg);
+  box-shadow: inset 0 0 0 5px #1d120c, inset 0 0 70px rgba(0,0,0,.72), 0 42px 55px rgba(0,0,0,.78), 0 5px 0 #78543a;
+}
+.uno-table-scene::before { background: radial-gradient(ellipse, rgba(255,255,255,.11), transparent 62%), repeating-linear-gradient(35deg, rgba(255,255,255,.018) 0 2px, transparent 2px 10px), #155b68; }
+.kittens-table-scene::before { background: radial-gradient(ellipse, rgba(255,255,255,.09), transparent 62%), repeating-linear-gradient(35deg, rgba(255,255,255,.018) 0 2px, transparent 2px 10px), #7b2820; }
+.uno-table-scene::after,
+.kittens-table-scene::after {
+  content: '';
+  position: absolute;
+  z-index: -3;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.035) 50%, transparent), repeating-linear-gradient(90deg, transparent 0 11%, rgba(0,0,0,.24) 11.1% 11.3%);
+  opacity: .38;
+}
+.uno-table-page .opponents-row,
+.kittens-table-page .opponents-row { z-index: 4; overflow: visible !important; }
+.uno-table-page .opponents-row .player-seat,
+.kittens-table-page .opponents-row .player-seat {
+  min-height: 112px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(234,199,143,.35) !important;
+  background: linear-gradient(145deg, rgba(42,39,37,.98), rgba(12,12,13,.98)) !important;
+  box-shadow: 0 16px 25px rgba(0,0,0,.58), inset 0 1px rgba(255,255,255,.07) !important;
+}
+.uno-table-page .opponents-row .player-seat::after,
+.kittens-table-page .opponents-row .player-seat::after {
+  content: '';
+  position: absolute;
+  left: 24%; right: 24%; bottom: -9px; height: 10px;
+  background: #251913;
+  border-radius: 0 0 10px 10px;
+}
+.uno-table-page .game-grid-layout { grid-template-columns: 250px minmax(360px, 1fr) 280px; z-index: 1; }
+.uno-table-page .game-center-col,
+.kittens-table-page .game-board-center { min-height: 310px; }
+.uno-table-page .game-center-col > div,
+.kittens-table-page .game-board-center > div { position: relative; z-index: 2; }
+.uno-table-page .game-left-col > .glass,
+.uno-table-page .game-right-col > .glass,
+.kittens-table-page .kittens-sidebar > .card {
+  background: rgba(8,10,12,.82) !important;
+  border: 1px solid rgba(234,199,143,.22) !important;
+  box-shadow: 0 16px 35px rgba(0,0,0,.4) !important;
+  backdrop-filter: blur(18px);
+}
+.uno-table-page .pile,
+.kittens-table-page .pile { transform: rotate(-3deg); box-shadow: 0 18px 22px rgba(0,0,0,.55) !important; }
+.uno-table-page .pile + div,
+.kittens-table-page .pile + div { transform: rotate(4deg); box-shadow: 0 18px 22px rgba(0,0,0,.5); }
+.uno-hand-tray,
+.kittens-table-page .game-hand-area {
+  z-index: 5;
+  border: 12px solid #382318 !important;
+  border-bottom: 0 !important;
+  background: linear-gradient(rgba(7,8,11,.74), rgba(7,8,11,.96)) !important;
+  box-shadow: inset 0 8px 28px #000, 0 -5px 0 #6d4930, 0 -18px 42px rgba(0,0,0,.5) !important;
+  backdrop-filter: blur(14px);
+}
+.uno-hand-tray > div,
+.kittens-table-page .game-hand-area > div:first-child { transform-origin: center bottom; }
+.kittens-table-page .game-board-container { padding-left: 34px; padding-right: 34px; }
+.kittens-table-page .kittens-sidebar { right: 22px; }
+.kittens-table-page .kittens-card { filter: drop-shadow(0 10px 9px rgba(0,0,0,.45)); }
+
+/* Monopoly as a physical board sitting on a lounge table */
+.monopoly-page { background: radial-gradient(ellipse at 42% 42%, #352319 0, #151018 46%, #07090f 85%) !important; }
+.monopoly-table-scene { position: relative; isolation: isolate; perspective: 1300px; overflow: visible !important; }
+.monopoly-table-scene::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  width: min(92vh, 92vw); height: min(92vh, 92vw);
+  left: 50%; top: 50%; transform: translate(-50%, -50%) rotateX(4deg);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #68442b 0 55%, #2e1c12 72%, #0e0907 74%);
+  box-shadow: 0 42px 70px rgba(0,0,0,.8), inset 0 0 35px rgba(0,0,0,.65);
+}
+.monopoly-board { transform: perspective(1400px) rotateX(3deg); transform-origin: center; background: #dbe8db !important; border: 8px solid #f1e4c8 !important; box-shadow: 0 30px 60px rgba(0,0,0,.72), 0 0 0 5px #422c1e !important; }
+.monopoly-tile { background: rgba(236,242,226,.94) !important; border-color: rgba(22,35,35,.35) !important; }
+.monopoly-tile-corner { background: #e6eedf !important; }
+.monopoly-tile .tile-content { color: #182323 !important; text-shadow: none; }
+.monopoly-sidebar { background: rgba(6,8,14,.88) !important; border-left-color: rgba(218,177,109,.2) !important; backdrop-filter: blur(20px); }
+.monopoly-controls { border: 8px solid #382318 !important; background: linear-gradient(#252326, #0d0d0f) !important; box-shadow: 0 12px 26px rgba(0,0,0,.55), inset 0 1px rgba(255,255,255,.08) !important; }
+.monopoly-auto-end { position: absolute; left: 50%; bottom: -31px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; white-space: nowrap; padding: 6px 13px; border-radius: 999px; color: #d8cdbd; background: rgba(7,8,10,.9); border: 1px solid rgba(255,255,255,.1); font-size: .72rem; font-weight: 800; box-shadow: 0 7px 18px rgba(0,0,0,.35); }
+.monopoly-auto-end span { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; animation: online-pulse 1s infinite; }
+.monopoly-controls { position: relative; margin-bottom: 28px; }
+.monopoly-back-btn { position: fixed; z-index: 90; left: 18px; top: 18px; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 8px 14px 8px 9px; color: #f7ead8; border: 1px solid rgba(236,199,139,.32); border-radius: 999px; background: rgba(10,10,12,.88); box-shadow: 0 9px 24px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.08); backdrop-filter: blur(14px); cursor: pointer; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.monopoly-back-btn:hover { transform: translateY(-2px); border-color: #e7b665; background: #211914; }.monopoly-back-btn span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #20160e; background: #e7b665; font-size: 1.1rem; font-weight: 900; }.monopoly-back-btn b { font-size: .78rem; letter-spacing: .02em; }
+.monopoly-page .board-center-area { overflow: hidden; color: #f5ead4; background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.1), transparent 34%), linear-gradient(145deg, #185a49, #0b392f 72%, #07261f) !important; border: 5px double rgba(238,213,164,.48) !important; box-shadow: inset 0 0 70px rgba(0,0,0,.58), inset 0 0 0 2px rgba(255,255,255,.05) !important; }
+.monopoly-page .board-center-area::before { content: ''; position: absolute; width: 108px; height: 150px; left: 9%; top: 50%; transform: translateY(-50%) rotate(-7deg); border: 4px solid #e5d2aa; border-radius: 9px; background: repeating-linear-gradient(45deg, #8b1e2d 0 7px, #a92d3e 7px 14px); box-shadow: 9px 7px 0 rgba(0,0,0,.2), 18px 14px 0 rgba(232,210,169,.75); opacity: .78; }
+.monopoly-page .board-center-area::after { content: 'CƠ HỘI'; position: absolute; display: grid; place-items: center; width: 108px; height: 150px; right: 9%; top: 50%; transform: translateY(-50%) rotate(7deg); border: 4px solid #e5d2aa; border-radius: 9px; color: #f7e8c9; background: repeating-linear-gradient(-45deg, #174d7d 0 7px, #1d659d 7px 14px); box-shadow: -9px 7px 0 rgba(0,0,0,.2), -18px 14px 0 rgba(232,210,169,.75); font: 900 .76rem var(--font-display); letter-spacing: .12em; opacity: .78; }
+.monopoly-page .board-watermark { opacity: .58 !important; }.monopoly-page .board-watermark-title { color: #f7ead5 !important; text-shadow: 0 3px 10px rgba(0,0,0,.65) !important; }.monopoly-page .board-watermark-icon { filter: drop-shadow(0 5px 8px rgba(0,0,0,.5)) !important; }
+.monopoly-sidebar h1, .monopoly-sidebar h2, .monopoly-sidebar h3, .monopoly-sidebar h4, .monopoly-sidebar strong { color: #f5f7fb !important; }.monopoly-sidebar .monopoly-player-card { color: #dce4ef; background: rgba(255,255,255,.035) !important; }.monopoly-sidebar .monopoly-log-item { color: #aebdd0 !important; background: rgba(255,255,255,.035) !important; }
+.tile-house-badge { gap: 1px; background: transparent !important; border: 0 !important; padding: 0 !important; }
+.house-piece { display: inline-grid; place-items: center; width: clamp(7px, 1.2cqw, 11px); height: clamp(7px, 1.2cqw, 11px); color: #f8fafc; font-size: clamp(7px, 1.1cqw, 10px); line-height: 1; text-shadow: 0 1px 2px #000; filter: drop-shadow(0 1px 1px rgba(0,0,0,.7)); }
+.hotel-piece { display: inline-block; font-size: clamp(10px, 1.7cqw, 16px); filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
+
+@media (max-width: 1200px) {
+  .uno-table-page .game-grid-layout { grid-template-columns: 220px 1fr; }
+  .uno-table-page .game-right-col { display: none !important; }
+}
+@media (max-width: 992px) {
+  .uno-table-scene::before, .kittens-table-scene::before, .monopoly-table-scene::before { display: none; }
+  .uno-table-page, .kittens-table-page { overflow-y: auto !important; }
+  .uno-table-page .game-grid-layout { display: flex; flex-direction: column; }
+  .uno-table-page .game-right-col { display: flex !important; }
+  .uno-hand-tray, .kittens-table-page .game-hand-area { border-width: 6px !important; }
+  .monopoly-board { transform: none; }
+  .monopoly-back-btn { position: absolute; top: 58px; left: 10px; }.monopoly-page .board-center-area::before, .monopoly-page .board-center-area::after { display: none; }
+}
+
+/* Final game-room layout pass: readable in both app themes */
+.game-back-btn { position: fixed; z-index: 120; left: 18px; top: 18px; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 13px 7px 8px; border: 1px solid rgba(241,196,120,.35); border-radius: 999px; color: #fff4df; background: rgba(8,9,11,.9); box-shadow: 0 9px 24px rgba(0,0,0,.42); backdrop-filter: blur(14px); font: 800 .76rem/1 'Outfit', sans-serif; cursor: pointer; transition: .2s ease; }.game-back-btn:hover { transform: translateY(-2px); border-color: #f1bb61; }.game-back-btn span { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; color: #21150d; background: #f1b653; font-size: 1rem; }
+.kittens-table-page, .kittens-table-page button, .kittens-table-page input { font-family: 'Outfit', 'Inter', sans-serif; }
+.kittens-table-page { color: #f8efe8 !important; }
+.kittens-table-page .game-board-container { padding: 12px 28px 0 !important; gap: 10px !important; }
+.kittens-table-page .opponents-row { height: 126px !important; min-height: 126px; flex-shrink: 0; gap: 14px !important; }
+.kittens-table-page .opponents-row .player-seat { width: 142px !important; height: 124px !important; min-height: 124px !important; padding: 10px !important; justify-content: center; filter: none !important; background: linear-gradient(155deg, #2b2522, #121214) !important; }
+.kittens-table-page .opponents-row .player-seat div,
+.kittens-table-page .opponents-row .player-seat strong { color: #f8fafc !important; }
+.kittens-table-page .opponents-row .player-seat div[style*="text-secondary"] { color: #cbd5e1 !important; }
+.kittens-table-page .game-board-center { width: min(1220px, 100%); min-height: 0 !important; margin: 0 auto !important; display: grid !important; grid-template-columns: minmax(420px, 1fr) 310px; grid-template-rows: 58px minmax(245px, 1fr); column-gap: 24px; align-items: center; }
+.kittens-table-page .game-board-center > div:first-child { grid-column: 1; grid-row: 1; width: min(460px, 80%) !important; margin: 0 auto !important; }
+.kittens-table-page .game-board-center > div:nth-child(2) { grid-column: 1; grid-row: 2; justify-self: center; margin-top: -8px; }
+.kittens-table-page .kittens-sidebar { grid-column: 2; grid-row: 1 / 3; position: static !important; width: 100% !important; height: 310px; transform: none !important; margin: 0 !important; display: grid !important; grid-template-rows: 38px minmax(0, 1fr); gap: 8px !important; align-self: center; }
+.kittens-side-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(7,8,10,.78); }.kittens-side-tabs button { border: 0; border-radius: 9px; color: #9ba8ba; background: transparent; font-size: .72rem; font-weight: 800; cursor: pointer; }.kittens-side-tabs button.active { color: #1b1007; background: #f2ad3c; box-shadow: 0 4px 12px rgba(242,173,60,.25); }
+.kittens-table-page .kittens-sidebar > .card { width: 100%; min-height: 0; max-height: none !important; padding: 16px !important; border-radius: 20px !important; background: rgba(9,10,13,.9) !important; overflow: hidden; }
+.kittens-table-page .kittens-sidebar > .chat-box { height: 264px !important; min-height: 0; border-radius: 18px !important; background: rgba(9,10,13,.92) !important; }.kittens-table-page .kittens-sidebar > .chat-box > div:first-child { padding: 10px 14px !important; }.kittens-table-page .kittens-sidebar > .chat-box > div:nth-child(2) { padding: 12px !important; }.kittens-table-page .kittens-sidebar > .chat-box form { padding: 10px !important; }
+.kittens-table-page .kittens-sidebar h4 { color: #fff3df !important; margin: 0 0 10px !important; }
+.kittens-table-page .kittens-sidebar .card div { color: #b9c5d5; }
+.kittens-table-page .kittens-sidebar .card div[style*="background"] { background: rgba(255,255,255,.055) !important; color: #dce5f1 !important; line-height: 1.35; }
+.kittens-table-page .game-hand-area { height: 192px !important; min-height: 192px !important; flex: 0 0 192px !important; margin: 0 -28px !important; padding: 12px 28px 4px !important; border-radius: 28px 28px 0 0 !important; align-items: center !important; }
+.kittens-table-page .game-hand-area > div:first-child { min-height: 166px !important; padding: 10px 22px 4px !important; align-items: center; }
+.kittens-table-page .game-control-panel { width: 270px !important; flex-shrink: 0; padding-right: 10px; }
+.kittens-table-page .game-control-panel .turn-indicator { color: #16100a !important; background: linear-gradient(135deg, #f4ae35, #e87913) !important; box-shadow: 0 8px 20px rgba(232,121,19,.25); }
+.kittens-table-page .kittens-card .card-label { color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,.65); }
+@media (max-width: 1100px) {
+  .kittens-table-page .game-board-center { display: flex !important; flex-direction: column !important; }
+  .kittens-table-page .kittens-sidebar { width: 100% !important; height: auto; grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) { .game-back-btn { top: 88px; left: 10px; }.kittens-table-page .game-board-container { padding: 48px 12px 0 !important; }.kittens-table-page .game-hand-area { margin: 0 -12px !important; }.kittens-table-page .opponents-row { scroll-snap-type: x proximity; }.kittens-table-page .opponents-row .player-seat { scroll-snap-align: start; } }
+
+/* Compact utilities, sound and final readability fixes */
+.sound-toggle { position: fixed; z-index: 1300; right: 88px; bottom: 25px; display: grid; place-items: center; width: 54px; height: 54px; padding: 0; border: 2px solid rgba(255,255,255,.82); border-radius: 50%; color: #fff; background: linear-gradient(145deg, #30223e, #111217); box-shadow: 0 10px 26px rgba(0,0,0,.48); font-size: 1.25rem; cursor: pointer; transition: transform .2s ease, border-color .2s ease; }.sound-toggle:hover { transform: translateY(-3px); border-color: #f4b64f; }
+.panel-minimize { margin-left: auto; width: 27px; height: 25px; padding: 0; border: 1px solid rgba(255,255,255,.15); border-radius: 8px; color: #f8fafc; background: rgba(255,255,255,.07); cursor: pointer; font-weight: 900; }
+.kittens-table-page .kittens-sidebar.is-closed { display: flex !important; align-items: flex-start; justify-content: flex-end; height: auto; align-self: start; background: transparent; }
+.log-popup-button { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid rgba(245,180,72,.42); border-radius: 13px; color: #fff5e3; background: rgba(10,10,12,.9); box-shadow: 0 10px 24px rgba(0,0,0,.38); cursor: pointer; font-weight: 800; }.log-popup-button span { font-size: .76rem; }
+.monopoly-page .board-center-area::before, .monopoly-page .board-center-area::after { display: none !important; }
+.monopoly-page .board-center-area { background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.08), transparent 28%), linear-gradient(145deg, #145143, #092e27) !important; }
+.monopoly-page .board-watermark { opacity: .32 !important; margin: 0 0 10px !important; }.monopoly-page .board-watermark-icon { font-size: clamp(24px, 4cqw, 42px) !important; }.monopoly-page .board-watermark-title { font-size: clamp(13px, 2.2cqw, 22px) !important; letter-spacing: .12em !important; }
+.monopoly-controls button { color: #f8fafc !important; text-shadow: 0 1px 2px rgba(0,0,0,.45); }.monopoly-controls button:disabled { color: #d4d8df !important; background: #55565a !important; opacity: .72 !important; text-shadow: none; }
+.monopoly-sidebar { color: #e8edf5 !important; }.monopoly-sidebar [style*="var(--text-primary)"] { color: #f8fafc !important; }.monopoly-sidebar [style*="var(--text-secondary)"] { color: #aebbd0 !important; }
+
+/* Monopoly information is an optional dock, not a permanent obstruction. */
+@media (min-width: 1025px) {
+  .monopoly-sidebar {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 120;
+    width: min(370px, calc(100vw - 32px));
+    border: 1px solid rgba(218,177,109,.24) !important;
+    border-radius: 24px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55);
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .monopoly-sidebar.is-closed { opacity: 0; transform: translateX(calc(100% + 28px)); pointer-events: none; }
+  .monopoly-sidebar.is-open { opacity: 1; transform: translateX(0); }
+  .monopoly-panel-minimize { position: sticky; top: 10px; margin: 10px 12px -42px auto; z-index: 4; }
+  .monopoly-info-popup {
+    position: fixed;
+    right: 170px;
+    bottom: 24px;
+    z-index: 110;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 18px;
+    border: 1px solid rgba(218,177,109,.4);
+    border-radius: 999px;
+    background: rgba(13,15,22,.94);
+    color: #f8fafc;
+    box-shadow: 0 12px 30px rgba(0,0,0,.42);
+    cursor: pointer;
+  }
+.monopoly-info-popup:hover { border-color: #dab16d; transform: translateY(-2px); }
+}
+
+.money-float {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  z-index: 200;
+  min-width: max-content;
+  padding: 4px 8px;
+  border: 2px solid currentColor;
+  border-radius: 9px;
+  background: rgba(5,8,12,.96);
+  font-size: .72rem;
+  font-weight: 950;
+  line-height: 1;
+  transform: translateX(-50%);
+  box-shadow: 0 7px 18px rgba(0,0,0,.55);
+}
+.money-float.gain { color: #4ade80; }
+.money-float.loss { color: #fb7185; }
+.transaction-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  max-width: min(88%, 390px);
+  padding: 10px 16px;
+  color: #f8fafc;
+  text-align: center;
+  border: 1px solid rgba(251,191,36,.55);
+  border-radius: 14px;
+  background: rgba(7,10,15,.94);
+  box-shadow: 0 12px 28px rgba(0,0,0,.5), 0 0 22px rgba(251,191,36,.12);
+}
+.transaction-notice b { color: #fbbf24; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; }
+.transaction-notice span { font-size: clamp(.7rem, 1.7cqw, .88rem); font-weight: 850; }
+.movement-status { color: #d8e2ee; font-size: clamp(.65rem, 1.4cqw, .78rem); font-weight: 800; letter-spacing: .02em; }
+.monopoly-tile .tile-name {
+  display: block !important;
+  width: 100%;
+  max-width: 100%;
+  max-height: none;
+  overflow: visible;
+  font-size: clamp(6px, .85cqw, 9px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0 !important;
+  text-align: center;
+  text-wrap: balance;
+  -webkit-line-clamp: unset;
+}
+.monopoly-tile .tile-price { font-size: clamp(6px, .78cqw, 8px) !important; line-height: 1 !important; }
+@media (max-width: 700px) { .sound-toggle { width: 46px; height: 46px; right: 76px; bottom: 18px; font-size: 1.05rem; } }

@@ -167,7 +167,7 @@
       "logs": {
         "draw": "{{player}} đã rút bài.",
         "skip": "{{player}} dùng Bỏ lượt.",
-        "attack": "{{player}} Tấn công! {{target}} phải đi 2 lượt.",
+        "attack": "{{player}} tấn công! Người chơi tiếp theo phải đi 2 lượt.",
         "shuffle": "{{player}} xáo lại xấp bài.",
         "see_future": "{{player}} đã nhìn thấu tương lai.",
         "favor": "{{player}} đòi một ân huệ từ {{target}}.",
@@ -176,7 +176,7 @@
         "exploded": "💥 BÙM! {{player}} đã bị nổ tung!",
         "combo2": "👯 {{player}} dùng bộ 2 lá để cướp 1 lá bài ngẫu nhiên từ {{target}}!",
         "combo3_success": "🧐 {{player}} dùng bộ 3 lá và đã cướp đúng lá {{card}} từ {{target}}!",
-        "combo3_fail": "😅 {{player}} dùng bộ 3 lá để đòi {{card}} nhưng {{target}} không có!",
+        "combo3_fail": "😅 {{player}} dùng bộ 3 lá nhưng {{target}} không có lá bài yêu cầu!",
         "combo5": "♻️ {{player}} dùng bộ 5 lá khác loại để hồi lại lá {{card}} từ xấp bài bỏ!"
       },
       "cards": {

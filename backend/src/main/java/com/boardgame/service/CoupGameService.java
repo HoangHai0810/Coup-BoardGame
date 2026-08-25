@@ -58,7 +58,7 @@ public class CoupGameService {
         return deck;
     }
 
-    public GameState declareAction(String roomId, String playerId, ActionType action, String targetId) {
+    public synchronized GameState declareAction(String roomId, String playerId, ActionType action, String targetId) {
         GameState state = games.get(roomId);
         validateTurn(state, playerId);
 
@@ -116,14 +116,22 @@ public class CoupGameService {
         return state;
     }
 
-    public GameState allowAction(String roomId, String playerId) {
+    public synchronized GameState allowAction(String roomId, String playerId) {
         GameState state = games.get(roomId);
+        if (state == null) throw new IllegalStateException("Game not found");
         if (state.getPhase() != GameState.Phase.AWAITING_RESPONSES &&
             state.getPhase() != GameState.Phase.AWAITING_BLOCK_RESPONSE) {
             return state;
         }
 
-        if (!state.getRespondedPlayerIds().contains(playerId)) {
+        Player responder = requireActivePlayer(state, playerId);
+        if (playerId.equals(excludedResponderId(state, state.getPendingAction()))) {
+            throw new IllegalArgumentException("This player cannot respond to the action");
+        }
+        if (state.getRespondedPlayerIds().contains(playerId)) {
+            throw new IllegalArgumentException("This player has already responded");
+        }
+        if (!state.getRespondedPlayerIds().contains(responder.getId())) {
             state.getRespondedPlayerIds().add(playerId);
         }
 
@@ -152,14 +160,25 @@ public class CoupGameService {
         return state;
     }
 
-    public GameState challenge(String roomId, String playerId) {
+    public synchronized GameState challenge(String roomId, String playerId) {
         GameState state = games.get(roomId);
+        if (state == null) throw new IllegalStateException("Game not found");
         if (state.getPhase() != GameState.Phase.AWAITING_RESPONSES &&
             state.getPhase() != GameState.Phase.AWAITING_BLOCK_RESPONSE) {
             return state;
         }
 
         PendingAction pending = state.getPendingAction();
+        requireActivePlayer(state, playerId);
+        if (playerId.equals(excludedResponderId(state, pending))) {
+            throw new IllegalArgumentException("This player cannot challenge");
+        }
+        if (state.getRespondedPlayerIds().contains(playerId)) {
+            throw new IllegalArgumentException("This player has already responded");
+        }
+        if (state.getPhase() == GameState.Phase.AWAITING_RESPONSES && getClaimedCard(pending.getActionType()) == null) {
+            throw new IllegalArgumentException("This action cannot be challenged");
+        }
         if (state.getPhase() == GameState.Phase.AWAITING_BLOCK_RESPONSE) {
             resolveBlockChallenge(state, pending, playerId);
         } else {
@@ -170,11 +189,20 @@ public class CoupGameService {
         return state;
     }
 
-    public GameState block(String roomId, String playerId, CardType blockingCard) {
+    public synchronized GameState block(String roomId, String playerId, CardType blockingCard) {
         GameState state = games.get(roomId);
+        if (state == null) throw new IllegalStateException("Game not found");
         if (state.getPhase() != GameState.Phase.AWAITING_RESPONSES) return state;
 
         PendingAction pending = state.getPendingAction();
+        requireActivePlayer(state, playerId);
+        if (playerId.equals(pending.getActorId())) {
+            throw new IllegalArgumentException("You cannot block your own action");
+        }
+        if ((pending.getActionType() == ActionType.ASSASSINATE || pending.getActionType() == ActionType.STEAL)
+                && !playerId.equals(pending.getTargetId())) {
+            throw new IllegalArgumentException("Only the target can block this action");
+        }
         if (!isValidBlock(pending.getActionType(), blockingCard)) {
             throw new IllegalArgumentException("Cannot block " + pending.getActionType() + " with " + blockingCard);
         }
@@ -191,7 +219,7 @@ public class CoupGameService {
         return state;
     }
 
-    public GameState chooseCardToLose(String roomId, String playerId, CardType cardType) {
+    public synchronized GameState chooseCardToLose(String roomId, String playerId, CardType cardType) {
         GameState state = games.get(roomId);
         if (state.getPhase() != GameState.Phase.AWAITING_CARD_LOSS) return state;
         if (!state.getCardLossPlayerId().equals(playerId)) return state;
@@ -209,9 +237,7 @@ public class CoupGameService {
         checkWinner(state);
         if (state.getPhase() != GameState.Phase.GAME_OVER) {
             String reason = state.getCardLossReason();
-            if ("ASSASSINATED".equals(reason)) {
-                endTurn(state);
-            } else if ("LOST_CHALLENGE_BLOCKER".equals(reason)) {
+            if ("LOST_CHALLENGE".equals(reason) || "LOST_CHALLENGE_BLOCKER_FAILED".equals(reason)) {
                 resolveAction(state, state.getPendingAction());
             } else {
                 endTurn(state);
@@ -222,12 +248,15 @@ public class CoupGameService {
         return state;
     }
 
-    public GameState exchangeCards(String roomId, String playerId, List<CardType> keepCards) {
+    public synchronized GameState exchangeCards(String roomId, String playerId, List<CardType> keepCards) {
         GameState state = games.get(roomId);
         if (state.getPhase() != GameState.Phase.AWAITING_EXCHANGE) return state;
 
         Player player = state.getPlayerById(playerId);
         PendingAction pending = state.getPendingAction();
+        if (pending == null || !playerId.equals(pending.getActorId())) {
+            throw new IllegalArgumentException("Only the acting player can exchange cards");
+        }
 
         List<CardType> drawn = List.of(pending.getDrawnCard1(), pending.getDrawnCard2());
         List<CardType> allOptions = new ArrayList<>(player.getAliveCards().stream().map(Card::getType).toList());
@@ -395,6 +424,9 @@ public class CoupGameService {
     }
 
     private void validateAction(GameState state, Player actor, ActionType action, String targetId) {
+        if (actor == null || actor.isEliminated()) throw new IllegalStateException("Player is not active");
+        if (targetId != null && targetId.equals(actor.getId())) throw new IllegalArgumentException("You cannot target yourself");
+        if (targetId != null) requireActivePlayer(state, targetId);
         switch (action) {
             case COUP -> {
                 if (actor.getCoins() < 7) throw new IllegalStateException("Need 7 coins for Coup");
@@ -414,6 +446,19 @@ public class CoupGameService {
         if (actor.getCoins() >= 10 && action != ActionType.COUP) {
             throw new IllegalStateException("With 10+ coins you must perform a Coup");
         }
+    }
+
+    private Player requireActivePlayer(GameState state, String playerId) {
+        if (state == null) throw new IllegalStateException("Game not found");
+        Player player = state.getPlayerById(playerId);
+        if (player == null || player.isEliminated()) throw new IllegalArgumentException("Player is not active");
+        return player;
+    }
+
+    private String excludedResponderId(GameState state, PendingAction pending) {
+        return state.getPhase() == GameState.Phase.AWAITING_BLOCK_RESPONSE
+                ? pending.getBlockerId()
+                : pending.getActorId();
     }
 
     private boolean isValidBlock(ActionType action, CardType blockingCard) {

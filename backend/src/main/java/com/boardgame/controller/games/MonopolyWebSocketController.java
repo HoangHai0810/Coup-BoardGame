@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 
 @Controller
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class MonopolyWebSocketController {
     private final MonopolyAIService monopolyAIService;
     private final SimpMessagingTemplate messaging;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final Map<String, ScheduledFuture<?>> autoEndTimers = new ConcurrentHashMap<>();
 
     @MessageMapping("/game/{roomId}/monopoly/roll")
     public void rollDice(@DestinationVariable String roomId, Authentication auth) {
@@ -37,6 +40,7 @@ public class MonopolyWebSocketController {
         if (state != null) {
             broadcastMonopolyState(roomId, state);
             scheduleMonopolyAITurnIfNeeded(roomId, state);
+            scheduleHumanAutoEndIfIdle(roomId, state);
         }
     }
 
@@ -47,6 +51,7 @@ public class MonopolyWebSocketController {
         if (state != null) {
             broadcastMonopolyState(roomId, state);
             scheduleMonopolyAITurnIfNeeded(roomId, state);
+            scheduleHumanAutoEndIfIdle(roomId, state);
         }
     }
 
@@ -67,6 +72,7 @@ public class MonopolyWebSocketController {
         MonopolyGameState state = monopolyService.buildHouse(roomId, user.getId().toString(), propertyId);
         if (state != null) {
             broadcastMonopolyState(roomId, state);
+            scheduleHumanAutoEndIfIdle(roomId, state);
         }
     }
 
@@ -79,8 +85,33 @@ public class MonopolyWebSocketController {
         if (state == null) return;
         MonopolyPlayer current = state.getPlayers().get(state.getCurrentTurnIndex());
         if (current.isAI() && !current.isBankrupt()) {
-            scheduler.schedule(() -> processMonopolyAITurn(roomId), 1500, TimeUnit.MILLISECONDS);
+            // Keep the state stable long enough for clients to show the dice and walk the token tile-by-tile.
+            scheduler.schedule(() -> processMonopolyAITurn(roomId), 2800, TimeUnit.MILLISECONDS);
         }
+    }
+
+    private void scheduleHumanAutoEndIfIdle(String roomId, MonopolyGameState state) {
+        ScheduledFuture<?> previous = autoEndTimers.remove(roomId);
+        if (previous != null) previous.cancel(false);
+        if (state == null || !("END_TURN".equals(state.getPhase()) || "BUY".equals(state.getPhase()))) return;
+
+        MonopolyPlayer current = state.getPlayers().get(state.getCurrentTurnIndex());
+        if (current.isAI() || current.isBankrupt() || monopolyService.hasOptionalAction(roomId, current.getId())) return;
+        String playerId = current.getId();
+        ScheduledFuture<?> timer = scheduler.schedule(() -> {
+            autoEndTimers.remove(roomId);
+            MonopolyGameState latest = monopolyService.getGame(roomId);
+            if (latest == null || "GAME_OVER".equals(latest.getPhase())) return;
+            MonopolyPlayer latestCurrent = latest.getPlayers().get(latest.getCurrentTurnIndex());
+            if (!playerId.equals(latestCurrent.getId()) || monopolyService.hasOptionalAction(roomId, playerId)) return;
+            MonopolyGameState next = monopolyService.endTurn(roomId, playerId);
+            if (next != null) {
+                next.addLog("Lượt tự động kết thúc vì không còn hành động khả dụng.");
+                broadcastMonopolyState(roomId, next);
+                scheduleMonopolyAITurnIfNeeded(roomId, next);
+            }
+        }, 3800, TimeUnit.MILLISECONDS);
+        autoEndTimers.put(roomId, timer);
     }
 
     private void processMonopolyAITurn(String roomId) {

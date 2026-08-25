@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import ChatBox from '../components/ChatBox';
 import TurnTimer from '../components/TurnTimer';
-import toast from 'react-hot-toast';
+import { playGameSound } from '../services/gameAudio';
 
 const UNO_ASSETS = '/assets/uno_assets_pack_1777970075772.png';
 const WILD_IMG = '/assets/uno_wild_card_premium_1778036505397.png';
@@ -47,6 +47,7 @@ export default function UnoPage() {
   const [myHand, setMyHand] = useState([]);
   const [choosingColorFor, setChoosingColorFor] = useState(null);
   const logEndRef = useRef(null);
+  const soundLogRef = useRef(0);
 
   useEffect(() => {
     const unsub1 = subscribe(`/topic/game/${roomId}`, data => {
@@ -63,6 +64,9 @@ export default function UnoPage() {
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const length = gameState?.actionLog?.length || 0;
+    if (soundLogRef.current && length > soundLogRef.current) playGameSound('card');
+    soundLogRef.current = length;
   }, [gameState?.actionLog]);
 
   if (!gameState) return (
@@ -107,10 +111,11 @@ export default function UnoPage() {
   };
 
   return (
-    <div className="page" style={{ 
+    <div className="page uno-table-page" style={{
       height: '100vh', display: 'flex', flexDirection: 'column', 
       background: 'var(--bg-base)', overflow: 'hidden', position: 'relative' 
     }}>
+      <button className="game-back-btn" onClick={() => navigate('/lobby')}><span>←</span> Trở về</button>
       {/* Dynamic ambient color glow from the active pile color */}
       <div 
         style={{ 
@@ -131,7 +136,7 @@ export default function UnoPage() {
 
       <Navbar />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px 40px', gap: 20, position: 'relative', zIndex: 1, minHeight: 0 }}>
+      <div className="uno-table-scene" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px 40px', gap: 20, position: 'relative', zIndex: 1, minHeight: 0 }}>
         
         {/* TOP: OPPONENTS */}
         <div className="opponents-row" style={{ display: 'flex', justifyContent: 'center', gap: 24, height: '140px', flexShrink: 0 }}>
@@ -331,7 +336,7 @@ export default function UnoPage() {
 
           {/* RIGHT: CHAT & SPECIAL */}
           <div className="game-right-col" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <ChatBox roomId={roomId} />
+            <ChatBox roomId={roomId} mode="inline" />
             
             <AnimatePresence>
               {choosingColorFor && (
@@ -361,7 +366,7 @@ export default function UnoPage() {
         </div>
 
         {/* BOTTOM: MY HAND */}
-        <div style={{ height: '220px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: 'rgba(0,0,0,0.15)', borderTop: '1px solid var(--border)', borderRadius: '40px 40px 0 0', margin: '0 -40px' }}>
+        <div className="uno-hand-tray" style={{ height: '220px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: 'rgba(0,0,0,0.15)', borderTop: '1px solid var(--border)', borderRadius: '40px 40px 0 0', margin: '0 -40px' }}>
           <div style={{ 
             display: 'flex', 
             gap: -24, 
@@ -481,7 +486,7 @@ export default function UnoPage() {
         )}
       </AnimatePresence>
 
-      <style jsx>{`
+      <style>{`
         .spinner {
           width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;
         }

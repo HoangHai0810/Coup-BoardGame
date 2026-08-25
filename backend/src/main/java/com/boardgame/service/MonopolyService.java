@@ -32,7 +32,7 @@ public class MonopolyService {
         return activeGames.get(roomId);
     }
 
-    public MonopolyGameState rollDice(String roomId, String playerId) {
+    public synchronized MonopolyGameState rollDice(String roomId, String playerId) {
         MonopolyGameState state = activeGames.get(roomId);
         if (state == null || !state.getPhase().equals("ROLL")) return state;
 
@@ -138,7 +138,7 @@ public class MonopolyService {
         }
     }
 
-    public MonopolyGameState buyProperty(String roomId, String playerId) {
+    public synchronized MonopolyGameState buyProperty(String roomId, String playerId) {
         MonopolyGameState state = activeGames.get(roomId);
         if (state == null || !state.getPhase().equals("BUY")) return state;
 
@@ -157,12 +157,13 @@ public class MonopolyService {
         return state;
     }
 
-    public MonopolyGameState buildHouse(String roomId, String playerId, int propertyId) {
+    public synchronized MonopolyGameState buildHouse(String roomId, String playerId, int propertyId) {
         MonopolyGameState state = activeGames.get(roomId);
         if (state == null) return null;
 
         MonopolyPlayer player = state.getPlayers().stream().filter(p -> p.getId().equals(playerId)).findFirst().orElse(null);
-        if (player == null || player.isBankrupt()) return state;
+        MonopolyPlayer current = state.getPlayers().get(state.getCurrentTurnIndex());
+        if (player == null || player.isBankrupt() || !current.getId().equals(playerId) || "GAME_OVER".equals(state.getPhase())) return state;
 
         Property p = state.getBoard().get(propertyId);
         if (p == null || !playerId.equals(p.getOwnerId())) return state;
@@ -182,6 +183,17 @@ public class MonopolyService {
             return state;
         }
 
+        // Houses must be distributed evenly across a complete color group.
+        int minimumLevel = state.getBoard().values().stream()
+                .filter(prop -> prop.getColorGroup().equals(group))
+                .mapToInt(Property::getHousesBuilt)
+                .min()
+                .orElse(0);
+        if (p.getHousesBuilt() > minimumLevel) {
+            state.addLog("Phải xây đều các tài sản cùng màu trước khi nâng cấp tiếp " + p.getName() + ".");
+            return state;
+        }
+
         if (player.getMoney() < p.getHousePrice()) {
             state.addLog("Không đủ tiền để xây nhà trên " + p.getName());
             return state;
@@ -198,7 +210,7 @@ public class MonopolyService {
         return state;
     }
 
-    public MonopolyGameState endTurn(String roomId, String playerId) {
+    public synchronized MonopolyGameState endTurn(String roomId, String playerId) {
         MonopolyGameState state = activeGames.get(roomId);
         if (state == null || (!state.getPhase().equals("END_TURN") && !state.getPhase().equals("BUY"))) return state;
 
@@ -215,6 +227,30 @@ public class MonopolyService {
 
         state.addLog("Đến lượt của " + state.getPlayers().get(state.getCurrentTurnIndex()).getUsername());
         return state;
+    }
+
+    public boolean hasOptionalAction(String roomId, String playerId) {
+        MonopolyGameState state = activeGames.get(roomId);
+        if (state == null || "GAME_OVER".equals(state.getPhase())) return false;
+        MonopolyPlayer player = state.getPlayers().get(state.getCurrentTurnIndex());
+        if (!player.getId().equals(playerId) || player.isBankrupt()) return false;
+
+        if ("BUY".equals(state.getPhase())) {
+            Property landed = state.getBoard().get(player.getPosition());
+            if (landed != null && landed.getOwnerId() == null && player.getMoney() >= landed.getPrice()) return true;
+        }
+        return state.getBoard().values().stream().anyMatch(property -> canBuildOn(state, player, property));
+    }
+
+    private boolean canBuildOn(MonopolyGameState state, MonopolyPlayer player, Property property) {
+        if (!player.getId().equals(property.getOwnerId()) || property.getHousePrice() <= 0
+                || property.getHousesBuilt() >= 5 || player.getMoney() < property.getHousePrice()) return false;
+        List<Property> group = state.getBoard().values().stream()
+                .filter(candidate -> candidate.getColorGroup().equals(property.getColorGroup()))
+                .toList();
+        if (group.isEmpty() || group.stream().anyMatch(candidate -> !player.getId().equals(candidate.getOwnerId()))) return false;
+        int minimumLevel = group.stream().mapToInt(Property::getHousesBuilt).min().orElse(0);
+        return property.getHousesBuilt() == minimumLevel;
     }
 
     private void checkBankruptcy(MonopolyGameState state, MonopolyPlayer player, MonopolyPlayer creditor) {

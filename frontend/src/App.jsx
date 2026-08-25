@@ -14,6 +14,8 @@ import ExplodingKittensPage from './pages/ExplodingKittensPage';
 import UnoPage from './pages/UnoPage';
 import MonopolyPage from './pages/MonopolyPage';
 import './index.css';
+import SoundToggle from './components/SoundToggle';
+import GameSoundscape from './components/GameSoundscape';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -41,12 +43,14 @@ function AppRoutes() {
       <Route path="/game/kittens/:roomId" element={
         <ProtectedRoute><ExplodingKittensPage /></ProtectedRoute>
       } />
+      {import.meta.env.DEV && <Route path="/preview/kittens" element={<ExplodingKittensPage preview />} />}
       <Route path="/game/uno/:roomId" element={
         <ProtectedRoute><UnoPage /></ProtectedRoute>
       } />
       <Route path="/game/monopoly/:roomId" element={
         <ProtectedRoute><MonopolyPage /></ProtectedRoute>
       } />
+      {import.meta.env.DEV && <Route path="/preview/monopoly" element={<MonopolyPage preview />} />}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
@@ -71,6 +75,8 @@ export default function App() {
                 duration: 3000
               }}
             />
+            <SoundToggle />
+            <GameSoundscape />
             <AppRoutes />
           </SocketProvider>
         </AuthProvider>
